@@ -290,6 +290,11 @@
                 </tbody>
             </table>
 
+            <tr class="savings-row">
+                <td>Gesamtersparnis pro Jahr</td>
+                <td id="res_savings_final" style="text-align:right;">0 €</td>
+            </tr>
+
             <div class="chart-container">
                 <canvas id="costChart"></canvas>
             </div>
@@ -419,6 +424,20 @@
             // Chart aktualisieren
             updateChart([energieBenzin, versBenzin, wartungBenzin, steuerBenzin], 
                         [energieElektro, versElektro, wartungElektro, steuerElektro]);
+
+            // Berechne die Differenz (hast du bereits als 'diff' im Code)
+            const diff = totalB - totalE;
+
+            // Suche die Stelle, wo die Tabellenwerte gesetzt werden und füge dies hinzu:
+            const savingsElement = document.getElementById('res_savings_final');
+            savingsElement.innerText = diff.toLocaleString('de-DE', {style:'currency', currency:'EUR'});
+
+            // Optional: Farbe anpassen, falls Elektro teurer wird (Minus-Ersparnis)
+            if (diff >= 0) {
+                savingsElement.style.color = "var(--saving-text)";
+            } else {
+                savingsElement.style.color = "var(--accent-benzin)";
+            }
         }
 
         function initChart() {
