@@ -1,526 +1,1309 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TCO Dashboard: Benzin vs. Elektro</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="icon" href="car.png" type="image/png"> 
-    <style>
-        /* CSS Variablen für Light / Dark Mode */
-        :root {
-            --bg-color: #f4f7f9;
-            --card-bg: #ffffff;
-            --text-color: #333333;
-            --text-muted: #666666;
-            --border-color: #e1e4e8;
-            --primary-color: #0056b3;
-            --accent-benzin: #e74c3c;
-            --accent-elektro: #2ecc71;
-            --input-bg: #ffffff;
-            --shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto-Kostenvergleich Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,300;1,9..40,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root[data-theme="dark"] {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --card: #1e2330;
+    --card2: #242939;
+    --border: #2d3347;
+    --text: #e8eaf2;
+    --text2: #9ba3bf;
+    --text3: #626880;
+    --accent: #5b8fff;
+    --accent2: #3d6fe8;
+    --green: #3ecf8e;
+    --green2: #2aad74;
+    --orange: #f5a623;
+    --red: #f5454e;
+    --purple: #a78bfa;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --glow: 0 0 20px rgba(91,143,255,0.15);
+  }
+  :root[data-theme="light"] {
+    --bg: #f0f2f8;
+    --bg2: #e6e9f4;
+    --bg3: #dce0ef;
+    --card: #ffffff;
+    --card2: #f5f7ff;
+    --border: #d4d9ee;
+    --text: #1a1e2e;
+    --text2: #4a5070;
+    --text3: #8890b0;
+    --accent: #3d6fe8;
+    --accent2: #2558d4;
+    --green: #1a9e6a;
+    --green2: #16845a;
+    --orange: #d9861a;
+    --red: #d63940;
+    --purple: #7c5ceb;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    --glow: 0 0 20px rgba(61,111,232,0.08);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+    font-size: 15px;
+  }
+  h1,h2,h3,h4 { font-family: 'DM Sans', sans-serif; font-weight: 800; }
 
-        [data-theme="dark"] {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #e0e0e0;
-            --text-muted: #a0a0a0;
-            --border-color: #333333;
-            --primary-color: #4da3ff;
-            --accent-benzin: #ff6b6b;
-            --accent-elektro: #4cd137;
-            --input-bg: #2a2a2a;
-            --shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
+  /* ── HEADER ── */
+  .header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .header h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+  .header-sub { font-size: 0.75rem; color: var(--text3); margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .theme-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--card); border: 1px solid var(--border);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; transition: all 0.2s; color: var(--text);
+  }
+  .theme-btn:hover { background: var(--card2); }
+  .save-badge {
+    font-size: 0.7rem; background: var(--green); color: #fff;
+    padding: 3px 10px; border-radius: 20px; font-weight: 600;
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .save-badge.show { opacity: 1; }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            transition: background-color 0.3s, color 0.3s;
-        }
+  /* ── LAYOUT ── */
+  .main { padding: 20px 24px 48px; max-width: 1600px; margin: 0 auto; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 20px;
-            line-height: 1.6;
-        }
+  /* 3-col on desktop, 1-col on mobile */
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .col-span-2 { grid-column: span 2; }
+  .col-span-3 { grid-column: span 3; }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1400px;
-            margin: 0 auto 30px auto;
-        }
+  @media (max-width: 960px) {
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+    /* col-span-2 stays at 2, col-span-3 wraps to full width */
+    .col-span-3 { grid-column: 1 / -1; }
+    /* col-span-2 on a 2-col grid = full width too – make it explicit */
+    .col-span-2 { grid-column: 1 / -1; }
+    .kpi-val { font-size: 1.1rem; }
+  }
+  @media (max-width: 640px) {
+    .main { padding: 12px 12px 48px; }
+    .grid-3, .grid-2 { grid-template-columns: 1fr; }
+    .col-span-2, .col-span-3 { grid-column: 1 / -1; }
+    .header { padding: 12px 16px; }
+    .kpi-val { font-size: 1rem; }
+    .kpi-grid { gap: 8px; }
+    .tabs { flex-wrap: wrap; }
+    .tab { flex: 1 1 auto; min-width: 80px; }
+    .car-chips { gap: 6px; }
+    .car-chip { font-size: 0.75rem; padding: 5px 10px; }
+    .comp-table { font-size: 0.75rem; }
+    .comp-table th, .comp-table td { padding: 7px 8px; }
+    .year-table { font-size: 0.72rem; }
+    .year-table th, .year-table td { padding: 5px 6px; }
+  }
 
-        h1 { font-size: 1.5rem; }
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text3);
+  }
+  .card-icon { font-size: 18px; }
 
-        button.theme-toggle {
-            background-color: #00070e00;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
+  /* ── SECTION LABELS ── */
+  .section-label {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent);
+    margin: 24px 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
 
-        /* 1-Spalten Layout (Mobile First) */
-        .dashboard {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+  /* ── INPUT CONTROLS ── */
+  .input-group { margin-bottom: 14px; }
+  .input-label {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .input-label span { font-size: 0.82rem; color: var(--text2); font-weight: 500; }
+  .input-label .val {
+    font-size: 0.82rem; font-weight: 700; color: var(--accent);
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg3); padding: 2px 8px; border-radius: 6px;
+    min-width: 70px; text-align: right;
+  }
+  input[type=range] {
+    width: 100%; -webkit-appearance: none;
+    height: 5px; border-radius: 3px;
+    background: var(--bg3); outline: none; cursor: pointer;
+    accent-color: var(--accent);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--accent);
+    cursor: pointer; box-shadow: 0 0 0 3px rgba(91,143,255,0.2);
+  }
+  input[type=number], input[type=text], select {
+    width: 100%; padding: 8px 12px; border-radius: 10px;
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); font-size: 0.85rem; font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border-color 0.2s;
+    -moz-appearance: textfield;
+  }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type=number]:focus, select:focus { border-color: var(--accent); }
+  select { cursor: pointer; }
 
-        /* 3-Spalten Layout (Desktop) */
-        @media (min-width: 1024px) {
-            .dashboard {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 4px; background: var(--bg3); padding: 4px; border-radius: 12px; margin-bottom: 16px; }
+  .tab {
+    flex: 1; padding: 8px 12px; border-radius: 8px; border: none;
+    background: transparent; color: var(--text3); font-size: 0.82rem;
+    font-family: 'DM Sans', sans-serif; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; text-align: center;
+  }
+  .tab.active {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 2px 8px rgba(91,143,255,0.3);
+  }
 
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: var(--shadow);
-        }
+  /* ── KPI BOXES ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+  @media(max-width:400px) { .kpi-grid { grid-template-columns: 1fr; } }
+  .kpi {
+    background: var(--bg3); border-radius: 12px; padding: 14px 16px;
+    border-left: 3px solid transparent;
+    transition: background 0.3s;
+  }
+  .kpi.accent { border-color: var(--accent); }
+  .kpi.green  { border-color: var(--green); }
+  .kpi.orange { border-color: var(--orange); }
+  .kpi.purple { border-color: var(--purple); }
+  .kpi.red    { border-color: var(--red); }
+  .kpi-label { font-size: 0.72rem; color: var(--text3); margin-bottom: 4px; font-weight: 500; }
+  .kpi-val { font-size: 1.3rem; font-weight: 800; font-family: 'DM Sans', sans-serif; }
+  .kpi-sub { font-size: 0.7rem; color: var(--text3); margin-top: 2px; }
 
-        .card h2 {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 10px;
-        }
+  /* ── SCENARIO BADGE ── */
+  .scenario-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .scenario-tab {
+    padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+    border: 1px solid var(--border); background: var(--bg3);
+    cursor: pointer; transition: all 0.2s; color: var(--text2);
+  }
+  .scenario-tab.s1.active { background: var(--orange); border-color: var(--orange); color: #fff; }
+  .scenario-tab.s2.active { background: var(--green); border-color: var(--green); color: #fff; }
 
-        .input-group {
-            margin-bottom: 15px;
-        }
+  /* ── COMPARISON TABLE ── */
+  .comp-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .comp-table th {
+    padding: 10px 14px; background: var(--bg3);
+    font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.78rem;
+    color: var(--text2); text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .comp-table th:not(:first-child) { text-align: right; }
+  .comp-table td {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .comp-table td:not(:first-child) { text-align: right; font-weight: 600; }
+  .comp-table tr:last-child td { border-bottom: none; font-weight: 700; font-size: 0.9rem; }
+  .comp-table .cat { color: var(--text3); font-size: 0.75rem; font-weight: 400; }
+  .comp-table .winner { color: var(--green); }
+  .comp-table .loser  { color: var(--red); }
+  .comp-table .total-row td { background: var(--bg3); border-radius: 8px; }
 
-        .input-group label {
-            display: block;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-            color: var(--text-muted);
-        }
+  /* ── CHART ── */
+  .chart-wrap { position: relative; height: 220px; }
+  .chart-wrap-tall { position: relative; height: 280px; }
 
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background-color: var(--input-bg);
-            color: var(--text-color);
-            font-size: 1rem;
-        }
+  /* ── CAR MODEL CHIPS ── */
+  .car-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .car-chip {
+    padding: 7px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+    border: 1px solid var(--border); background: var(--bg3);
+    cursor: pointer; transition: all 0.2s; color: var(--text2);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .car-chip.active-benzin { background: var(--orange); border-color: var(--orange); color: #fff; }
+  .car-chip.active-elektro { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip-dot { width: 8px; height: 8px; border-radius: 50%; }
 
-        .input-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
+  /* ── INFO ROW ── */
+  .info-row {
+    display: flex; gap: 8px; align-items: flex-start;
+    background: var(--bg3); border-radius: 10px; padding: 10px 14px;
+    margin-bottom: 8px; font-size: 0.8rem;
+  }
+  .info-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .info-row strong { color: var(--text); display: block; font-weight: 600; font-size: 0.82rem; }
+  .info-row span { color: var(--text3); }
 
-        .results-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
+  /* ── LEGEND DOT ── */
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--text3); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
 
-        .results-table th, .results-table td {
-            text-align: left;
-            padding: 10px 5px;
-            border-bottom: 1px solid var(--border-color);
-        }
+  /* ── DIFF BADGE ── */
+  .diff { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
+  .diff.pos { background: rgba(62,207,142,0.15); color: var(--green); }
+  .diff.neg { background: rgba(245,69,78,0.15); color: var(--red); }
 
-        .results-table th { color: var(--text-muted); font-weight: normal; }
-        
-        .total-row {
-            font-weight: bold;
-            font-size: 1.1rem;
-            border-top: 2px solid var(--border-color);
-        }
+  /* ── PROGRESS BAR ── */
+  .prog-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+  .prog-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
 
-        .chart-container {
-            position: relative;
-            height: 300px;
-            width: 100%;
-        }
+  /* ── TOOLTIP ── */
+  [data-tip] { position: relative; cursor: help; }
+  [data-tip]::after {
+    content: attr(data-tip);
+    position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%);
+    background: var(--card2); color: var(--text); font-size: 0.72rem;
+    padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+    white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.2s;
+    z-index: 200; min-width: 180px; white-space: normal; text-align: center;
+    line-height: 1.4;
+  }
+  [data-tip]:hover::after { opacity: 1; }
 
-        .reset-btn {
-            background-color: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 10px;
-            width: 100%;
-        }
-        .reset-btn:hover { background-color: var(--border-color); }
+  /* ── FOOTER NOTE ── */
+  .footnote {
+    font-size: 0.72rem; color: var(--text3); line-height: 1.5;
+    background: var(--bg3); border-radius: 10px; padding: 12px 14px;
+    margin-top: 8px;
+  }
+  .footnote strong { color: var(--text2); }
 
-        .savings-row {
-            font-weight: bold;
-            font-size: 1.1rem;
-            background-color: var(--saving-bg);
-            color: var(--accent-elektro);
-        }
-        .savings-row td {
-            border-top: 2px solid var(--accent-elektro);
-            padding: 12px 5px;
-        }
+  /* ── RANGE ROW ── */
+  .range-display { font-size: 0.72rem; color: var(--text3); margin-top: 3px; }
 
-    </style>
+  /* ── RECOMMENDATION CARD ── */
+  .rec-card {
+    border-radius: 16px; padding: 20px;
+    background: linear-gradient(135deg, var(--card), var(--card2));
+    border: 1px solid var(--border);
+  }
+  .rec-verdict {
+    font-family: 'DM Sans', sans-serif; font-size: 1.4rem; font-weight: 800;
+    margin-bottom: 8px; line-height: 1.2;
+  }
+  .rec-body { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
+
+  /* ── YEAR COMPARISON ── */
+  .year-table { width: 100%; font-size: 0.78rem; }
+  .year-table th { color: var(--text3); font-weight: 600; padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--border); }
+  .year-table th:first-child { text-align: left; }
+  .year-table td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--border); }
+  .year-table td:first-child { text-align: left; color: var(--text2); }
+  .year-table tr:last-child td { border-bottom: none; font-weight: 700; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
 </head>
 <body>
 
-    <header>
-        <h1>Benzin vs. Elektro</h1>
-        <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
-    </header>
+<div class="header">
+  <div class="header-left">
+    <div class="logo-icon">🚗</div>
+    <div>
+      <div class="header h1" style="font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:800;">AutoKosten Dashboard</div>
+      <div class="header-sub">Benzin vs. Elektro — Dein persönlicher Kostenvergleich</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="save-badge" id="saveBadge">✓ Gespeichert</span>
+    <button class="theme-btn" onclick="toggleTheme()" title="Theme wechseln" id="themeBtn">🌙</button>
+  </div>
+</div>
 
-    <div class="dashboard">
-        
-        <div class="card">
-            <h2>Fahrprofil & Energie</h2>
-            
-            <div class="input-group">
-                <label>Gesamtkilometer pro Jahr</label>
-                <input type="number" id="km_gesamt" data-key="km_gesamt" oninput="calculate()">
-            </div>
-            <div class="input-group">
-                <label>Davon Urlaubskilometer (extern laden)</label>
-                <input type="number" id="km_urlaub" data-key="km_urlaub" oninput="calculate()">
-            </div>
-            
-            <div style="margin-top:20px; margin-bottom: 10px; font-weight:bold; color:var(--accent-benzin)">⛽ Hyundai Tucson (Benzin)</div>
-            <div class="input-group">
-                <label>Verbrauch (L / 100km)</label>
-                <input type="number" step="0.1" id="verbrauch_benzin" data-key="verbrauch_benzin" oninput="calculate()">
-            </div>
-            <div class="input-group">
-                <label>Benzinpreis (€ / Liter)</label>
-                <input type="number" step="0.01" id="preis_benzin" data-key="preis_benzin" oninput="calculate()">
-            </div>
+<div class="main">
 
-            <div style="margin-top:20px; margin-bottom: 10px; font-weight:bold; color:var(--accent-elektro)">⚡ Elektro SUV (ID.4 / Enyaq)</div>
-            <div class="input-group">
-                <label>Verbrauch (kWh / 100km)</label>
-                <input type="number" step="0.1" id="verbrauch_strom" data-key="verbrauch_strom" oninput="calculate()">
-            </div>
-            <div class="input-group">
-                <label>Strompreis Arbeit/Alltag (€ / kWh)</label>
-                <input type="number" step="0.001" id="preis_strom_arbeit" data-key="preis_strom_arbeit" oninput="calculate()">
-            </div>
-            <div class="input-group">
-                <label>Strompreis Urlaub (€ / kWh)</label>
-                <input type="number" step="0.01" id="preis_strom_urlaub" data-key="preis_strom_urlaub" oninput="calculate()">
-            </div>
-        </div>
+  <!-- ═══ ROW 1: Profile + Fahrzeuge + Szenarien ═══ -->
+  <div class="section-label">⚙️ Eingaben & Fahrzeugprofil</div>
+  <div class="grid-3">
 
-        <div class="card">
-            <h2>Jährliche Fixkosten</h2>
+    <!-- CARD: Mein Fahrprofil -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Mein Fahrprofil</div>
+        <div class="card-icon">📍</div>
+      </div>
 
-            <div style="margin-bottom: 10px; font-weight:bold; color:var(--accent-benzin)">⛽ Hyundai Tucson (Benzin)</div>
-            <div class="input-group">
-                <label>Kfz-Steuer (€)</label>
-                <input type="number" id="steuer_benzin" data-key="steuer_benzin" oninput="calculate()">
-            </div>
-            <div class="input-group">
-                <label>Versicherung Vollkasko (€)</label>
-                <input type="number" id="vers_benzin" data-key="vers_benzin" oninput="calculate()">
-            </div>
-            <div class="input-group">
-                <label>Wartung / Service (€)</label>
-                <input type="number" id="wartung_benzin" data-key="wartung_benzin" oninput="calculate()">
-            </div>
-
-            <div style="margin-top:20px; margin-bottom: 10px; font-weight:bold; color:var(--accent-elektro)">⚡ Elektro SUV (ID.4 / Enyaq)</div>
-            <div class="input-group">
-                <label>Kfz-Steuer (€)</label>
-                <input type="number" id="steuer_elektro" data-key="steuer_elektro" oninput="calculate()">
-            </div>
-            <div class="input-group">
-                <label>Versicherung Vollkasko (€)</label>
-                <input type="number" id="vers_elektro" data-key="vers_elektro" oninput="calculate()">
-            </div>
-            <div class="input-group">
-                <label>Wartung / Service (€)</label>
-                <input type="number" id="wartung_elektro" data-key="wartung_elektro" oninput="calculate()">
-            </div>
-            <div class="input-group">
-                <label>THG-Prämie (Gutschrift in €)</label>
-                <input type="number" id="thg_praemie" data-key="thg_praemie" oninput="calculate()">
-            </div>
-
-            <button class="reset-btn" onclick="resetDefaults()">Standardwerte wiederherstellen</button>
-        </div>
-
-        <div class="card">
-            <h2>Ergebnisse (pro Jahr)</h2>
-            
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        <th>Kostenpunkt</th>
-                        <th>Benzin</th>
-                        <th>Elektro</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Energie (Sprit/Strom)</td>
-                        <td id="res_energie_b">0 €</td>
-                        <td id="res_energie_e">0 €</td>
-                    </tr>
-                    <tr>
-                        <td>Steuer (inkl. THG)</td>
-                        <td id="res_steuer_b">0 €</td>
-                        <td id="res_steuer_e">0 €</td>
-                    </tr>
-                    <tr>
-                        <td>Versicherung</td>
-                        <td id="res_vers_b">0 €</td>
-                        <td id="res_vers_e">0 €</td>
-                    </tr>
-                    <tr>
-                        <td>Wartung</td>
-                        <td id="res_wartung_b">0 €</td>
-                        <td id="res_wartung_e">0 €</td>
-                    </tr>
-                    <tr class="total-row">
-                        <td>Gesamt</td>
-                        <td id="res_total_b" style="color:var(--accent-benzin)">0 €</td>
-                        <td id="res_total_e" style="color:var(--accent-elektro)">0 €</td>
-                    </tr>
-
-                    <tr class="savings-row">
-                        <td>Ersparnis</td>
-                        <td colspan="3" id="res_savings_final" style="text-align:center;">0 €</td>
-                    </tr>
-                </tbody>
-            </table>
-
-
-            <div class="chart-container">
-                <canvas id="costChart"></canvas>
-            </div>
-        </div>
-
+      <div class="input-group">
+        <div class="input-label"><span>Arbeitsweg (1-fach, km)</span><span class="val" id="vWork">20</span></div>
+        <input type="range" id="sWork" min="5" max="80" value="20" oninput="update()">
+      </div>
+      <div class="input-group">
+        <div class="input-label"><span>Arbeitstage pro Jahr</span><span class="val" id="vDays">220</span></div>
+        <input type="range" id="sDays" min="100" max="260" value="220" oninput="update()">
+      </div>
+      <div class="input-group">
+        <div class="input-label"><span>Urlaubskilometer / Jahr</span><span class="val" id="vHoliday">2000</span> km</div>
+        <input type="range" id="sHoliday" min="500" max="10000" step="100" value="2000" oninput="update()">
+      </div>
+      <div class="input-group">
+        <div class="input-label"><span>Stadtfahrten Wochenende / Jahr</span><span class="val" id="vWeekend">1500</span> km</div>
+        <input type="range" id="sWeekend" min="0" max="5000" step="100" value="1500" oninput="update()">
+      </div>
+      <div class="info-row" style="margin-top:6px;">
+        <span class="info-icon">📊</span>
+        <div><strong>Gesamt-km / Jahr: <span id="totalKm" style="color:var(--accent)">~10.280</span></strong><span>Davon Urlaub: <span id="pctHoliday">19%</span></span></div>
+      </div>
     </div>
 
-    <script>
-        // Standardwerte aus deinem Profil
-        const defaultValues = {
-            km_gesamt: 12500,
-            km_urlaub: 2000,
-            verbrauch_benzin: 6.8,
-            preis_benzin: 1.80,
-            verbrauch_strom: 18.5,
-            preis_strom_arbeit: 0.375,
-            preis_strom_urlaub: 0.59,
-            steuer_benzin: 140,
-            vers_benzin: 650,
-            wartung_benzin: 450,
-            steuer_elektro: 0,
-            vers_elektro: 720,
-            wartung_elektro: 250,
-            thg_praemie: 80
-        };
+    <!-- CARD: Fahrzeugauswahl -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Fahrzeugauswahl</div>
+        <div class="card-icon">🏷️</div>
+      </div>
 
-        let costChart = null;
+      <div class="car-chips" id="carChips">
+        <div class="car-chip active-benzin" data-id="tucson" onclick="selectCar('tucson')">
+          <span class="chip-dot" style="background:var(--orange)"></span>Hyundai Tucson 1.6 GTDI
+        </div>
+        <div class="car-chip" data-id="id4" onclick="selectCar('id4')">
+          <span class="chip-dot" style="background:var(--accent)"></span>VW ID.4 Pure
+        </div>
+        <div class="car-chip" data-id="ioniq5" onclick="selectCar('ioniq5')">
+          <span class="chip-dot" style="background:var(--purple)"></span>Hyundai Ioniq 5
+        </div>
+        <div class="car-chip" data-id="kona" onclick="selectCar('kona')">
+          <span class="chip-dot" style="background:var(--green)"></span>Hyundai Kona Elektro
+        </div>
+      </div>
 
-        // Theme Toggle Logik
-        function toggleTheme() {
-            const body = document.documentElement;
-            const currentTheme = body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            body.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateChartTheme(); // Diagrammfarben anpassen
-        }
+      <div id="carInfo">
+        <!-- filled by JS -->
+      </div>
 
-        // Initialisierung beim Laden
-        window.onload = () => {
-            // Theme laden
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                document.documentElement.setAttribute('data-theme', savedTheme);
-            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
+      <div class="input-group" style="margin-top:14px;">
+        <div class="input-label"><span>Kaufpreis (gebraucht, €)</span></div>
+        <input type="number" id="iPrice" value="28000" oninput="update()" min="5000" max="80000" step="500">
+      </div>
+      <div class="input-group">
+        <div class="input-label"><span>Versicherung Vollkasko / Jahr (€)</span></div>
+        <input type="number" id="iInsurance" value="900" oninput="update()" min="200" max="3000" step="50">
+      </div>
+      <div class="input-group">
+        <div class="input-label"><span>Wartung / Inspektion / Jahr (€)</span></div>
+        <input type="number" id="iMaint" value="600" oninput="update()" min="100" max="2000" step="50">
+      </div>
+    </div>
 
-            // Daten laden und Felder füllen
-            loadData();
-            initChart();
-            calculate();
-        };
+    <!-- CARD: Energie & Szenarien -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Energie & Szenarien</div>
+        <div class="card-icon">⛽</div>
+      </div>
 
-        function loadData() {
-            const inputs = document.querySelectorAll('input[data-key]');
-            inputs.forEach(input => {
-                const key = input.getAttribute('data-key');
-                const savedValue = localStorage.getItem(key);
-                if (savedValue !== null) {
-                    input.value = savedValue;
-                } else {
-                    input.value = defaultValues[key];
-                }
-            });
-        }
+      <div class="tabs">
+        <button class="tab active" id="tab-s1" onclick="setScenario(1)">Szenario 1<br><small style="font-weight:400;font-size:0.68rem;">Benzin 2,00€</small></button>
+        <button class="tab" id="tab-s2" onclick="setScenario(2)">Szenario 2<br><small style="font-weight:400;font-size:0.68rem;">Benzin 1,80€</small></button>
+        <button class="tab" id="tab-custom" onclick="setScenario(0)">Eigene<br><small style="font-weight:400;font-size:0.68rem;">Eingabe</small></button>
+      </div>
 
-        function resetDefaults() {
-            const inputs = document.querySelectorAll('input[data-key]');
-            inputs.forEach(input => {
-                const key = input.getAttribute('data-key');
-                input.value = defaultValues[key];
-                localStorage.setItem(key, defaultValues[key]);
-            });
-            calculate();
-        }
+      <div class="input-group">
+        <div class="input-label"><span>Benzinpreis (€/L)</span><span class="val" id="vFuel">2,00</span></div>
+        <input type="range" id="sFuel" min="1.40" max="2.80" step="0.01" value="2.00" oninput="scenarioCustom();update()">
+      </div>
+      <div class="input-group">
+        <div class="input-label"><span>Strom Arbeit (€/kWh)</span><span class="val" id="vElecWork">0,375</span></div>
+        <input type="range" id="sElecWork" min="0.20" max="0.60" step="0.005" value="0.375" oninput="update()">
+      </div>
+      <div class="input-group">
+        <div class="input-label"><span>Strom Ladesäule Urlaub (€/kWh)</span><span class="val" id="vElecHoliday">0,59</span></div>
+        <input type="range" id="sElecHoliday" min="0.30" max="0.90" step="0.01" value="0.59" oninput="update()">
+      </div>
+      <div class="input-group">
+        <div class="input-label"><span data-tip="CO₂-Preis steigt jährlich. Betrifft Mineralöl/Benzin via ETS2 ab 2027">CO₂-Preis €/t (aktuell ~65€)</span><span class="val" id="vCO2">65</span></div>
+        <input type="range" id="sCO2" min="25" max="200" step="5" value="65" oninput="update()">
+      </div>
+      <div class="input-group">
+        <div class="input-label"><span>Kfz-Steuer (€/Jahr)</span></div>
+        <input type="number" id="iKfzSteuer" value="182" oninput="update()" min="0" max="1500" step="1">
+        <div class="range-display" id="steuerNote">Tucson 1.6 GTDI ~182€/Jahr</div>
+      </div>
+    </div>
 
-        function getVal(id) {
-            return parseFloat(document.getElementById(id).value) || 0;
-        }
+  </div><!-- end grid-3 -->
 
-        function formatCurrency(value) {
-            return value.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-        }
 
-        function calculate() {
-            // Eingaben speichern
-            const inputs = document.querySelectorAll('input[data-key]');
-            inputs.forEach(input => {
-                localStorage.setItem(input.getAttribute('data-key'), input.value);
-            });
+  <!-- ═══ ROW 2: KPIs ═══ -->
+  <div class="section-label">📊 Jahreskosten im Überblick</div>
+  <div class="grid-3">
 
-            // Werte auslesen
-            const kmGesamt = getVal('km_gesamt');
-            const kmUrlaub = getVal('km_urlaub');
-            const kmAlltag = Math.max(0, kmGesamt - kmUrlaub);
+    <!-- Benziner KPIs -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" id="benzinTitle">⛽ Benziner (Tucson 1.6 GTDI)</div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi orange"><div class="kpi-label">Kraftstoffkosten</div><div class="kpi-val" id="kFuel">—</div><div class="kpi-sub">/ Jahr</div></div>
+        <div class="kpi accent"><div class="kpi-label">Versicherung</div><div class="kpi-val" id="kIns">—</div><div class="kpi-sub">Vollkasko</div></div>
+        <div class="kpi purple"><div class="kpi-label">Kfz-Steuer</div><div class="kpi-val" id="kTax">—</div><div class="kpi-sub">/ Jahr</div></div>
+        <div class="kpi accent"><div class="kpi-label">Wartung</div><div class="kpi-val" id="kMaint">—</div><div class="kpi-sub">/ Jahr</div></div>
+      </div>
+      <div class="kpi green" style="margin-top:10px;">
+        <div class="kpi-label">🏆 Gesamtkosten / Jahr</div>
+        <div class="kpi-val" id="kTotal">—</div>
+        <div class="kpi-sub" id="kTotalMonth">—/Monat</div>
+      </div>
+    </div>
 
-            // Berechnung Benzin
-            const energieBenzin = (kmGesamt / 100) * getVal('verbrauch_benzin') * getVal('preis_benzin');
-            const steuerBenzin = getVal('steuer_benzin');
-            const versBenzin = getVal('vers_benzin');
-            const wartungBenzin = getVal('wartung_benzin');
-            const totalBenzin = energieBenzin + steuerBenzin + versBenzin + wartungBenzin;
+    <!-- Elektro KPIs -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" id="elektroTitle">⚡ Elektro (VW ID.4)</div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi accent"><div class="kpi-label">Stromkosten Arbeit</div><div class="kpi-val" id="eElecWork">—</div><div class="kpi-sub">/ Jahr</div></div>
+        <div class="kpi orange"><div class="kpi-label">Stromkosten Urlaub</div><div class="kpi-val" id="eElecHoliday">—</div><div class="kpi-sub">/ Jahr</div></div>
+        <div class="kpi green"><div class="kpi-label">Kfz-Steuer</div><div class="kpi-val">0 €</div><div class="kpi-sub">10 J. befreit</div></div>
+        <div class="kpi accent"><div class="kpi-label">Wartung</div><div class="kpi-val" id="eMaint">—</div><div class="kpi-sub">/ Jahr</div></div>
+      </div>
+      <div class="kpi green" style="margin-top:10px;">
+        <div class="kpi-label">🏆 Gesamtkosten / Jahr</div>
+        <div class="kpi-val" id="eTotal">—</div>
+        <div class="kpi-sub" id="eTotalMonth">—/Monat</div>
+      </div>
+    </div>
 
-            // Berechnung Elektro
-            const energieStromAlltag = (kmAlltag / 100) * getVal('verbrauch_strom') * getVal('preis_strom_arbeit');
-            const energieStromUrlaub = (kmUrlaub / 100) * getVal('verbrauch_strom') * getVal('preis_strom_urlaub');
-            const energieElektro = energieStromAlltag + energieStromUrlaub;
-            const steuerElektro = getVal('steuer_elektro') - getVal('thg_praemie'); // THG als negativer Steuerposten
-            const versElektro = getVal('vers_elektro');
-            const wartungElektro = getVal('wartung_elektro');
-            const totalElektro = energieElektro + steuerElektro + versElektro + wartungElektro;
+    <!-- Differenz & Einsparung -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">💰 Differenz & Amortisation</div>
+      </div>
+      <div class="kpi green" style="margin-bottom:10px;">
+        <div class="kpi-label">Ersparnis Elektro / Jahr</div>
+        <div class="kpi-val" id="savings">—</div>
+        <div class="kpi-sub" id="savingsMonth">—</div>
+      </div>
+      <div class="kpi orange" style="margin-bottom:10px;">
+        <div class="kpi-label">Mehrpreis Elektro (Kauf)</div>
+        <div class="kpi-val" id="priceDiff">—</div>
+        <div class="kpi-sub">Kaufpreisdifferenz</div>
+      </div>
+      <div class="kpi purple">
+        <div class="kpi-label">Amortisationsdauer</div>
+        <div class="kpi-val" id="amortYears">—</div>
+        <div class="kpi-sub">Jahre bis Break-Even</div>
+      </div>
+      <div class="prog-bar" style="margin-top:12px;">
+        <div class="prog-fill" id="amortBar" style="background:linear-gradient(90deg,var(--accent),var(--purple));width:0%"></div>
+      </div>
+      <div class="range-display" id="amortLabel" style="margin-top:4px;text-align:right">0 von 10 Jahren</div>
+    </div>
 
-            // Tabelle aktualisieren
-            document.getElementById('res_energie_b').innerText = formatCurrency(energieBenzin);
-            document.getElementById('res_energie_e').innerText = formatCurrency(energieElektro);
-            document.getElementById('res_steuer_b').innerText = formatCurrency(steuerBenzin);
-            document.getElementById('res_steuer_e').innerText = formatCurrency(steuerElektro);
-            document.getElementById('res_vers_b').innerText = formatCurrency(versBenzin);
-            document.getElementById('res_vers_e').innerText = formatCurrency(versElektro);
-            document.getElementById('res_wartung_b').innerText = formatCurrency(wartungBenzin);
-            document.getElementById('res_wartung_e').innerText = formatCurrency(wartungElektro);
-            
-            document.getElementById('res_total_b').innerText = formatCurrency(totalBenzin);
-            document.getElementById('res_total_e').innerText = formatCurrency(totalElektro);
+  </div><!-- end row2 -->
 
-            // Chart aktualisieren
-            updateChart([energieBenzin, versBenzin, wartungBenzin, steuerBenzin], 
-                        [energieElektro, versElektro, wartungElektro, steuerElektro]);
 
-            // Berechne die Differenz
-            const diff = totalBenzin - totalElektro;
+  <!-- ═══ ROW 3: Detailtabelle + Diagramm ═══ -->
+  <div class="section-label">📋 Detailkostenvergleich</div>
+  <div class="grid-3">
 
-            // Suche die Stelle, wo die Tabellenwerte gesetzt werden und füge dies hinzu:
-            const savingsElement = document.getElementById('res_savings_final');
-            savingsElement.innerText = diff.toLocaleString('de-DE', {style:'currency', currency:'EUR'});
+    <!-- Kostenaufstellung -->
+    <div class="card col-span-2">
+      <div class="card-header">
+        <div class="card-title">Jahres-Kostenaufstellung</div>
+        <div style="display:flex;gap:6px;">
+          <span id="scenarioBadge" style="font-size:0.72rem;padding:3px 10px;border-radius:20px;background:var(--orange);color:#fff;font-weight:700;">Szenario 1: 2,00€/L</span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Kostenart</th>
+              <th id="colBenzin">⛽ Benziner</th>
+              <th id="colElektro">⚡ Elektro</th>
+              <th>Differenz</th>
+            </tr>
+          </thead>
+          <tbody id="costTableBody">
+          </tbody>
+        </table>
+      </div>
+      <div class="footnote" style="margin-top:12px;">
+        <strong>Hinweise:</strong> Benziner-Kfz-Steuer basiert auf Hubraum + CO₂ nach §9 KraftStG. Elektro-KFZ-Steuer = 0€ (10 Jahre ab Erstzulassung befreit). Vollkasko-Versicherung variiert stark nach Schadenfreiheitsklasse, Wohnort, Alter. Wartung Elektro ~30% günstiger (kein Ölwechsel, weniger Verschleißteile).
+      </div>
+    </div>
 
-            // Optional: Farbe anpassen, falls Elektro teurer wird (Minus-Ersparnis)
-            if (diff >= 0) {
-                savingsElement.style.color = "var(--accent-elektro)";
-            } else {
-                savingsElement.style.color = "var(--accent-benzin)";
-            }
-        }
+    <!-- CO2 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🌱 CO₂-Bilanz</div>
+      </div>
+      <div class="kpi orange" style="margin-bottom:10px;">
+        <div class="kpi-label">CO₂ Benziner (Tank-to-Wheel)</div>
+        <div class="kpi-val" id="co2Benzin">—</div>
+        <div class="kpi-sub">kg/Jahr bei ~160g/km</div>
+      </div>
+      <div class="kpi green" style="margin-bottom:10px;">
+        <div class="kpi-label">CO₂ Elektro (DE-Strommix)</div>
+        <div class="kpi-val" id="co2Elektro">—</div>
+        <div class="kpi-sub">kg/Jahr (~380g CO₂/kWh 2025)</div>
+      </div>
+      <div class="kpi accent">
+        <div class="kpi-label">CO₂-Kostenvorteil / Jahr</div>
+        <div class="kpi-val" id="co2Cost">—</div>
+        <div class="kpi-sub" id="co2CostNote">bei CO₂-Preis XX €/t</div>
+      </div>
+      <div class="footnote" style="margin-top:12px;">
+        Benzin: ~2,36 kg CO₂/L (Tank-to-Wheel). DE-Strommix 2025 ≈ 380g CO₂/kWh. <strong>CO₂-Aufschlag:</strong> 1t CO₂ × Preis ÷ 424L (pro Tonne Benzin) = <span id="co2FootNote">—</span> Ct/L Aufschlag auf Benzin. Fließt direkt in Benzinkosten ein.
+      </div>
+    </div>
 
-        function initChart() {
-            const ctx = document.getElementById('costChart').getContext('2d');
-            
-            Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
-            Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  </div>
 
-            costChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Benzin (Tucson)', 'Elektro (SUV)'],
-                    datasets: [
-                        { label: 'Energie', data: [0, 0], backgroundColor: '#3498db' },
-                        { label: 'Versicherung', data: [0, 0], backgroundColor: '#9b59b6' },
-                        { label: 'Wartung', data: [0, 0], backgroundColor: '#f1c40f' },
-                        { label: 'Steuer (inkl. THG)', data: [0, 0], backgroundColor: '#e67e22' }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) { label += ': '; }
-                                    if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(context.parsed.y);
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { stacked: true, grid: { display: false } },
-                        y: { stacked: true, border: { display: false } }
-                    }
-                }
-            });
-        }
+  <!-- ═══ ROW 4: Diagramme ═══ -->
+  <div class="section-label">📈 Diagramme & Visualisierungen</div>
+  <div class="grid-3">
 
-        function updateChart(dataBenzin, dataElektro) {
-            if(!costChart) return;
-            // Energie
-            costChart.data.datasets[0].data = [dataBenzin[0], Math.max(0, dataElektro[0])];
-            // Versicherung
-            costChart.data.datasets[1].data = [dataBenzin[1], Math.max(0, dataElektro[1])];
-            // Wartung
-            costChart.data.datasets[2].data = [dataBenzin[2], Math.max(0, dataElektro[2])];
-            // Steuer/THG
-            costChart.data.datasets[3].data = [dataBenzin[3], dataElektro[3]];
-            
-            costChart.update();
-        }
+    <!-- Balkendiagramm Kostenvergleich -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Kostenstruktur Vergleich</div>
+      </div>
+      <div class="chart-wrap-tall">
+        <canvas id="chartBar"></canvas>
+      </div>
+    </div>
 
-        function updateChartTheme() {
-            if(costChart) {
-                const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-                const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim();
-                
-                costChart.options.plugins.legend.labels.color = textColor;
-                costChart.options.scales.x.ticks.color = textColor;
-                costChart.options.scales.y.ticks.color = textColor;
-                costChart.options.scales.y.grid.color = gridColor;
-                costChart.update();
-            }
-        }
-    </script>
+    <!-- Linienchart Kumulierte Kosten -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Kumulierte Kosten über 10 Jahre</div>
+      </div>
+      <div class="chart-wrap-tall">
+        <canvas id="chartLine"></canvas>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Benziner</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Elektro</div>
+      </div>
+    </div>
+
+    <!-- Donut Energiekosten -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Energiekosten Elektro Aufteilung</div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chartDonut"></canvas>
+      </div>
+      <div id="elecBreakdown" style="margin-top:12px;"></div>
+    </div>
+
+  </div>
+
+  <!-- ═══ ROW 5: Elektro Alternativen + Empfehlung ═══ -->
+  <div class="section-label">🔌 Elektro-Alternativen im Überblick</div>
+  <div class="grid-3">
+
+    <div class="card col-span-2">
+      <div class="card-header">
+        <div class="card-title">Verfügbare Elektro-SUVs als Tucson-Alternative</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="year-table">
+          <thead>
+            <tr>
+              <th>Modell</th>
+              <th>Reichweite</th>
+              <th>Verbrauch</th>
+              <th>Gebrauchtpreis</th>
+              <th>Kofferraum</th>
+              <th>Kfz-Steuer</th>
+              <th>Besonderheit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>VW ID.4 Pure</strong></td>
+              <td>~364 km</td>
+              <td>~16,5 kWh</td>
+              <td>~23–27.000€</td>
+              <td>543 L</td>
+              <td style="color:var(--green)">0€ (10J.)</td>
+              <td>Meistverkauft, günstig</td>
+            </tr>
+            <tr>
+              <td><strong>VW ID.4 Pro</strong></td>
+              <td>~520 km</td>
+              <td>~18 kWh</td>
+              <td>~28–34.000€</td>
+              <td>543 L</td>
+              <td style="color:var(--green)">0€ (10J.)</td>
+              <td>Große Batterie 77kWh</td>
+            </tr>
+            <tr>
+              <td><strong>Hyundai Ioniq 5</strong></td>
+              <td>~480 km</td>
+              <td>~17 kWh</td>
+              <td>~28–35.000€</td>
+              <td>527 L</td>
+              <td style="color:var(--green)">0€ (10J.)</td>
+              <td>800V-Laden, V2L</td>
+            </tr>
+            <tr>
+              <td><strong>Hyundai Kona Elektro</strong></td>
+              <td>~454 km</td>
+              <td>~14,5 kWh</td>
+              <td>~22–28.000€</td>
+              <td>466 L</td>
+              <td style="color:var(--green)">0€ (10J.)</td>
+              <td>Kompakt, sparsam</td>
+            </tr>
+            <tr>
+              <td><strong>Skoda Enyaq iV 60</strong></td>
+              <td>~390 km</td>
+              <td>~17 kWh</td>
+              <td>~25–30.000€</td>
+              <td>585 L</td>
+              <td style="color:var(--green)">0€ (10J.)</td>
+              <td>Größter Kofferraum</td>
+            </tr>
+            <tr>
+              <td><strong>BYD Atto 3</strong></td>
+              <td>~420 km</td>
+              <td>~16 kWh</td>
+              <td>~22–26.000€</td>
+              <td>440 L</td>
+              <td style="color:var(--green)">0€ (10J.)</td>
+              <td>Günstig, Blade-Batterie</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="footnote" style="margin-top:10px;">
+        Preise: Gebrauchtmarkt DE, Bj. 2022–2023, Stand April 2026. Reichweiten nach WLTP. Kfz-Steuer für Elektrofahrzeuge: 0€ für 10 Jahre ab Erstzulassung (§3d KraftStG).
+      </div>
+    </div>
+
+    <!-- Empfehlung -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🎯 Meine Empfehlung</div>
+      </div>
+      <div class="rec-card">
+        <div class="rec-verdict" id="recTitle">Lade...</div>
+        <div class="rec-body" id="recBody">Lade...</div>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="info-row">
+          <span class="info-icon">✅</span>
+          <div><strong>Dein Ladeprofil</strong><span>Arbeit: 37,5 Ct — kein Heimladen nötig, nur Urlaub öffentlich</span></div>
+        </div>
+        <div class="info-row">
+          <span class="info-icon">⚠️</span>
+          <div><strong>Ölpreis-Risiko</strong><span>Geopolitik (Iran-Krieg) kann Benzinpreis auf 2,20–2,50€ treiben</span></div>
+        </div>
+        <div class="info-row">
+          <span class="info-icon">🔌</span>
+          <div><strong>Ladenetz 2026</strong><span>Urlaubsrouten gut abgedeckt, 59 Ct/kWh = vertretbar</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ ROW 6: 5-Jahres Tabelle ═══ -->
+  <div class="section-label">📅 5-Jahres Projektion</div>
+  <div class="grid-3">
+    <div class="card col-span-3">
+      <div class="card-header">
+        <div class="card-title">Kumulierte Gesamtbetriebskosten inkl. Kaufpreis (TCO)</div>
+        <div style="font-size:0.75rem;color:var(--text3)">inkl. Kaufpreisdifferenz, jährl. Energiekosten, Wartung, Versicherung, Steuer</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="year-table" id="tcoTable">
+          <thead>
+            <tr>
+              <th>Jahr</th>
+              <th>Benziner lfd. Kosten</th>
+              <th>Benziner kum. TCO</th>
+              <th>Elektro lfd. Kosten</th>
+              <th>Elektro kum. TCO</th>
+              <th>Vorteil Elektro</th>
+            </tr>
+          </thead>
+          <tbody id="tcoBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end main -->
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const CARS = {
+  tucson: {
+    name: 'Hyundai Tucson 1.6 GTDI 150PS',
+    type: 'benzin',
+    consumption: 6.65, // L/100km
+    price: 28000,
+    insurance: 900,
+    maint: 600,
+    tax: 182,
+    co2perKm: 160, // g/km
+    icon: '⛽',
+    color: 'orange',
+    note: 'WLTP ~7L, realer Wert Spritmonitor ~6,5–6,8L',
+    elektroAlt: 'id4'
+  },
+  id4: {
+    name: 'VW ID.4 Pure (170PS)',
+    type: 'elektro',
+    consumption: 16.5, // kWh/100km
+    price: 25000,
+    insurance: 850,
+    maint: 380,
+    tax: 0,
+    icon: '⚡',
+    color: 'accent',
+    note: 'Reichweite ~364km WLTP, 52kWh Batterie',
+    benzinAlt: 'tucson'
+  },
+  ioniq5: {
+    name: 'Hyundai Ioniq 5 (Standard)',
+    type: 'elektro',
+    consumption: 17.0,
+    price: 29000,
+    insurance: 920,
+    maint: 400,
+    tax: 0,
+    icon: '⚡',
+    color: 'purple',
+    note: 'Reichweite ~480km, 800V-Schnellladen, V2L',
+    benzinAlt: 'tucson'
+  },
+  kona: {
+    name: 'Hyundai Kona Elektro (48kWh)',
+    type: 'elektro',
+    consumption: 14.5,
+    price: 22000,
+    insurance: 800,
+    maint: 350,
+    tax: 0,
+    icon: '⚡',
+    color: 'green',
+    note: 'Reichweite ~454km WLTP, kompakt, günstigster Einstieg',
+    benzinAlt: 'tucson'
+  }
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let state = {
+  selectedCar: 'tucson',
+  scenario: 1,
+  // Fahrprofil
+  work: 20, days: 220, holiday: 2000, weekend: 1500,
+  // Energie
+  fuel: 2.00, elecWork: 0.375, elecHoliday: 0.59, co2Price: 65,
+  // Fahrzeug custom
+  price: 28000, insurance: 900, maint: 600, kfzSteuer: 182,
+};
+
+// ── CHARTS ────────────────────────────────────────────────────────────────────
+let chartBar, chartLine, chartDonut;
+
+function getChartColors() {
+  const s = getComputedStyle(document.documentElement);
+  return {
+    orange: s.getPropertyValue('--orange').trim(),
+    accent: s.getPropertyValue('--accent').trim(),
+    green:  s.getPropertyValue('--green').trim(),
+    purple: s.getPropertyValue('--purple').trim(),
+    red:    s.getPropertyValue('--red').trim(),
+    text2:  s.getPropertyValue('--text2').trim(),
+    border: s.getPropertyValue('--border').trim(),
+    bg3:    s.getPropertyValue('--bg3').trim(),
+  };
+}
+
+function initCharts() {
+  const C = getChartColors();
+  const opts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: C.text2, font: { size: 10 } }, grid: { color: C.border } },
+      y: { ticks: { color: C.text2, font: { size: 10 } }, grid: { color: C.border } }
+    }
+  };
+
+  chartBar = new Chart(document.getElementById('chartBar'), {
+    type: 'bar',
+    data: { labels: [], datasets: [] },
+    options: { ...opts, plugins: { legend: { display: true, labels: { color: C.text2, font: { size: 11 } } } } }
+  });
+
+  chartLine = new Chart(document.getElementById('chartLine'), {
+    type: 'line',
+    data: { labels: Array.from({length:10},(_,i)=>`J.${i+1}`), datasets: [] },
+    options: { ...opts,
+      plugins: { legend: { display: false } },
+      elements: { point: { radius: 3 }, line: { tension: 0.3 } }
+    }
+  });
+
+  chartDonut = new Chart(document.getElementById('chartDonut'), {
+    type: 'doughnut',
+    data: { labels: ['Arbeit', 'Urlaub'], datasets: [{ data: [70,30], backgroundColor: [C.accent, C.orange], borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'bottom', labels: { color: C.text2, font: { size: 11 } } } },
+      cutout: '65%'
+    }
+  });
+}
+
+// ── COMPUTE ───────────────────────────────────────────────────────────────────
+function compute() {
+  const s = state;
+  const totalKm = s.work * 2 * s.days + s.holiday + s.weekend;
+  const workKm  = s.work * 2 * s.days;
+  const holidayKm = s.holiday;
+  const otherKm = s.weekend;
+
+  // ---- CO2-AUFSCHLAG auf Benzin ----
+  // Benzin emittiert ~2,36 kg CO₂/L (inkl. Vorkette ~2,7 kg, Tank-to-Wheel ~2,36)
+  // CO₂-Preis wirkt als Steueraufschlag auf Kraftstoff (ETS2 ab 2027, aktuell via nEHS)
+  // Umrechnung: CO₂-Preis €/t → Aufschlag auf Benzinpreis €/L
+  // 1L Super 95 ≈ 2.36 kg CO₂ = 0.00236 t → Aufschlag = co2Price * 0.00236 €/L
+  const benzinCar = CARS['tucson'];
+  const co2PerLiterBenzin = 0.00236; // t CO₂ / Liter
+  const co2FuelSurcharge  = s.co2Price * co2PerLiterBenzin; // €/Liter Aufschlag
+  const effectiveFuelPrice = s.fuel + co2FuelSurcharge;     // Gesamtpreis inkl. CO₂
+
+  // ---- BENZINER ----
+  const benzinFuel       = (totalKm / 100) * benzinCar.consumption * effectiveFuelPrice;
+  const benzinFuelBase   = (totalKm / 100) * benzinCar.consumption * s.fuel;       // rein Spritkosten
+  const benzinCO2Charge  = benzinFuel - benzinFuelBase;                             // CO₂-Anteil separat
+  const benzinIns  = s.insurance;
+  const benzinMaint= s.maint;
+  const benzinTax  = s.kfzSteuer;
+  const benzinTotal= benzinFuel + benzinIns + benzinMaint + benzinTax;
+
+  // ---- ELEKTRO ----
+  const elCar = CARS[s.selectedCar];
+  let elTotal = 0, elWork = 0, elHol = 0, elMaint = 0, elIns = 0;
+  if (elCar.type === 'elektro') {
+    const elecNonHoliday = workKm + otherKm;
+    elWork   = (elecNonHoliday / 100) * elCar.consumption * s.elecWork;
+    elHol    = (holidayKm / 100) * elCar.consumption * s.elecHoliday;
+    elIns    = CARS[s.selectedCar].insurance;
+    elMaint  = CARS[s.selectedCar].maint;
+    elTotal  = elWork + elHol + elIns + elMaint; // Steuer = 0, kein CO₂-Aufschlag
+  } else {
+    elWork   = (workKm / 100) * elCar.consumption * effectiveFuelPrice;
+    elHol    = (holidayKm / 100) * elCar.consumption * effectiveFuelPrice;
+    elIns    = s.insurance; elMaint = s.maint;
+    elTotal  = elWork + elHol + elIns + elMaint + s.kfzSteuer;
+  }
+
+  const savings = benzinTotal - elTotal;
+  const priceDiff = s.price - CARS[s.selectedCar].price;
+  const amortYears = priceDiff > 0 && savings > 0 ? priceDiff / savings : (savings <= 0 ? 999 : 0);
+
+  // ---- CO2-BILANZ (Tonnen/Jahr, informativ) ----
+  const co2Benzin   = (totalKm / 100) * benzinCar.co2perKm;                           // kg
+  const deCO2perkWh = 0.380;                                                           // kg/kWh DE-Strommix 2025
+  const co2Elektro  = (totalKm / 100) * (elCar.consumption || 16.5) * deCO2perkWh;   // kg
+  const co2Saving   = (co2Benzin - co2Elektro) / 1000;                                // Tonnen
+  const co2CostAdv  = co2Saving * s.co2Price;  // Monetärer Vorteil in €/Jahr
+
+  return { totalKm, workKm, holidayKm, otherKm,
+           benzinFuel, benzinFuelBase, benzinCO2Charge,
+           benzinIns, benzinMaint, benzinTax, benzinTotal,
+           elWork, elHol, elIns, elMaint, elTotal,
+           savings, priceDiff, amortYears,
+           co2Benzin, co2Elektro, co2Saving, co2CostAdv,
+           effectiveFuelPrice, co2FuelSurcharge };
+}
+
+// ── UPDATE UI ─────────────────────────────────────────────────────────────────
+function update() {
+  syncSliders();
+  saveState();
+
+  const r = compute();
+  const s = state;
+  const elCar = CARS[s.selectedCar];
+  const C = getChartColors();
+
+  // Header KPIs
+  const fmt  = v => v.toLocaleString('de-DE', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' €';
+  const fmtP = (v,d=1) => v.toLocaleString('de-DE', {minimumFractionDigits:d, maximumFractionDigits:d});
+
+  // Profile
+  document.getElementById('vWork').textContent     = s.work;
+  document.getElementById('vDays').textContent     = s.days;
+  document.getElementById('vHoliday').textContent  = s.holiday.toLocaleString('de-DE');
+  document.getElementById('vWeekend').textContent  = s.weekend.toLocaleString('de-DE');
+  document.getElementById('totalKm').textContent   = r.totalKm.toLocaleString('de-DE');
+  document.getElementById('pctHoliday').textContent= Math.round(r.holidayKm/r.totalKm*100) + '%';
+
+  // Energie
+  document.getElementById('vFuel').textContent        = fmtP(s.fuel) + '€';
+  document.getElementById('vElecWork').textContent    = fmtP(s.elecWork, 3) + '€';
+  document.getElementById('vElecHoliday').textContent = fmtP(s.elecHoliday) + '€';
+  document.getElementById('vCO2').textContent         = s.co2Price;
+
+  // Benziner KPIs
+  document.getElementById('benzinTitle').textContent = '⛽ ' + CARS['tucson'].name;
+  document.getElementById('kFuel').textContent  = fmt(r.benzinFuel);
+  document.getElementById('kIns').textContent   = fmt(r.benzinIns);
+  document.getElementById('kTax').textContent   = fmt(r.benzinTax);
+  document.getElementById('kMaint').textContent = fmt(r.benzinMaint);
+  document.getElementById('kTotal').textContent = fmt(r.benzinTotal);
+  document.getElementById('kTotalMonth').textContent = fmt(r.benzinTotal/12) + '/Monat';
+
+  // Elektro KPIs
+  document.getElementById('elektroTitle').textContent = '⚡ ' + elCar.name;
+  document.getElementById('eElecWork').textContent    = fmt(r.elWork);
+  document.getElementById('eElecHoliday').textContent = fmt(r.elHol);
+  document.getElementById('eMaint').textContent       = fmt(r.elMaint);
+  document.getElementById('eTotal').textContent       = fmt(r.elTotal);
+  document.getElementById('eTotalMonth').textContent  = fmt(r.elTotal/12) + '/Monat';
+
+  // Differenz
+  const savPos = r.savings > 0;
+  document.getElementById('savings').textContent      = (savPos ? '+' : '') + fmt(r.savings);
+  document.getElementById('savings').closest('.kpi').className = 'kpi ' + (savPos ? 'green' : 'red');
+  document.getElementById('savingsMonth').textContent = (savPos ? '+' : '') + fmt(r.savings/12) + '/Monat';
+
+  const priceD = s.price - elCar.price;
+  document.getElementById('priceDiff').textContent    = fmt(Math.abs(priceD)) + (priceD > 0 ? ' (Benziner teurer)' : ' (Elektro teurer)');
+  const amY = r.amortYears < 100 ? fmtP(r.amortYears, 1) + ' J.' : '> 20 J.';
+  document.getElementById('amortYears').textContent = amY;
+
+  const amortPct = Math.min(100, (r.amortYears <= 0 ? 100 : (10 / Math.max(r.amortYears, 0.1) * 100)));
+  document.getElementById('amortBar').style.width = amortPct + '%';
+  document.getElementById('amortLabel').textContent = r.amortYears < 100
+    ? `Break-Even nach ~${fmtP(r.amortYears,1)} Jahren`
+    : 'Break-Even nicht erreicht';
+
+  // Szenario Badge
+  const badge = document.getElementById('scenarioBadge');
+  if (s.scenario === 1) { badge.textContent = 'Szenario 1: 2,00€/L'; badge.style.background = 'var(--orange)'; }
+  else if (s.scenario === 2) { badge.textContent = 'Szenario 2: 1,80€/L'; badge.style.background = 'var(--green)'; }
+  else { badge.textContent = `Eigene: ${fmtP(s.fuel)}€/L`; badge.style.background = 'var(--accent)'; }
+
+  // Table columns
+  document.getElementById('colBenzin').textContent = '⛽ ' + CARS['tucson'].name.split(' ').slice(0,3).join(' ');
+  document.getElementById('colElektro').textContent = '⚡ ' + elCar.name.split(' ').slice(0,3).join(' ');
+
+  // Cost table — CO₂-Aufschlag als eigene Zeile
+  const tbody = document.getElementById('costTableBody');
+  const rows = [
+    { cat: 'Kraftstoff (Basis-Spritpreis)',  b: r.benzinFuelBase,   e: r.elWork + r.elHol, sub: true },
+    { cat: '→ Strom Arbeit & Wochenende',    b: null,               e: r.elWork, indent: true },
+    { cat: '→ Strom Ladesäule (Urlaub)',     b: null,               e: r.elHol,  indent: true },
+    { cat: 'CO₂-Aufschlag auf Benzin',       b: r.benzinCO2Charge, e: 0,         co2row: true },
+    { cat: 'Vollkasko-Versicherung',          b: r.benzinIns,        e: r.elIns },
+    { cat: 'Kfz-Steuer',                     b: r.benzinTax,        e: 0 },
+    { cat: 'Wartung / Inspektion',            b: r.benzinMaint,      e: r.elMaint },
+  ];
+  let bSum = 0, eSum = 0;
+  tbody.innerHTML = rows.map(row => {
+    if (row.indent) {
+      return `<tr><td style="padding-left:28px;color:var(--text3);font-size:0.75rem">${row.cat}</td><td>—</td><td>${fmt(row.e)}</td><td></td></tr>`;
+    }
+    if (row.b !== null) { bSum += row.b; eSum += row.e; }
+    const diff = row.b !== null ? row.b - row.e : null;
+    const diffStr = diff !== null
+      ? `<span class="diff ${diff > 0 ? 'pos' : diff < 0 ? 'neg' : ''}">${diff > 0 ? '+' : ''}${fmt(diff)}</span>`
+      : '';
+    const bStr = row.b !== null
+      ? `<span class="${row.co2row ? '' : row.b > row.e ? 'loser' : ''}" style="${row.co2row ? 'color:var(--orange)' : ''}">${fmt(row.b)}</span>`
+      : '—';
+    const eStr = row.b !== null
+      ? `<span class="${row.co2row ? '' : row.e > row.b ? 'loser' : ''}" style="${row.co2row ? 'color:var(--green)' : ''}">${fmt(row.e)}</span>`
+      : fmt(row.e);
+    const rowStyle = row.co2row ? `style="background:rgba(91,143,255,0.05)"` : '';
+    return `<tr ${rowStyle}><td>${row.cat}${row.co2row ? ` <span style="font-size:0.7rem;color:var(--text3)">(${s.co2Price}€/t × ${fmtP(r.co2FuelSurcharge,3)}€/L)</span>` : ''}</td><td>${bStr}</td><td>${eStr}</td><td>${diffStr}</td></tr>`;
+  }).join('');
+  tbody.innerHTML += `<tr class="total-row"><td><strong>Gesamt / Jahr</strong></td><td><strong>${fmt(bSum)}</strong></td><td><strong>${fmt(eSum)}</strong></td><td><strong><span class="diff ${bSum-eSum>0?'pos':'neg'}">${bSum-eSum>0?'+':''}${fmt(bSum-eSum)}</span></strong></td></tr>`;
+
+  // CO2
+  document.getElementById('co2Benzin').textContent  = Math.round(r.co2Benzin).toLocaleString('de-DE') + ' kg';
+  document.getElementById('co2Elektro').textContent = Math.round(r.co2Elektro).toLocaleString('de-DE') + ' kg';
+  document.getElementById('co2Cost').textContent    = fmt(r.co2CostAdv);
+  document.getElementById('co2CostNote').textContent = `${fmtP(r.co2Saving,1)} t CO₂-Einsparung × ${s.co2Price}€/t`;
+  const ftEl = document.getElementById('co2FootNote');
+  if (ftEl) ftEl.textContent = fmtP(r.co2FuelSurcharge * 100, 2);
+
+  // ── Charts ──
+  // Bar chart — stacked so CO₂-Aufschlag sichtbar ist
+  chartBar.data.labels = ['Kraftstoff', 'CO₂-Aufschl.', 'Versicherung', 'Steuer', 'Wartung'];
+  chartBar.data.datasets = [
+    { label: '⛽ Benziner', backgroundColor: C.orange + 'cc',
+      data: [r.benzinFuelBase, r.benzinCO2Charge, r.benzinIns, r.benzinTax, r.benzinMaint] },
+    { label: '⚡ ' + elCar.name.split(' ').slice(0,2).join(' '),
+      backgroundColor: C.accent + 'cc',
+      data: [r.elWork + r.elHol, 0, r.elIns, 0, r.elMaint] }
+  ];
+  chartBar.update();
+
+  // Line chart (10 years TCO)
+  const bP = s.price, eP = elCar.price;
+  let bCum = bP, eCum = eP;
+  const bData = [], eData = [];
+  for (let i = 1; i <= 10; i++) {
+    bCum += r.benzinTotal; bData.push(Math.round(bCum));
+    eCum += r.elTotal;     eData.push(Math.round(eCum));
+  }
+  chartLine.data.datasets = [
+    { label: 'Benziner', data: bData, borderColor: C.orange, backgroundColor: C.orange + '22', fill: true, tension: 0.3 },
+    { label: 'Elektro',  data: eData, borderColor: C.accent, backgroundColor: C.accent + '22', fill: true, tension: 0.3 }
+  ];
+  chartLine.update();
+
+  // Donut
+  chartDonut.data.datasets[0].data = [Math.round(r.elWork), Math.round(r.elHol)];
+  chartDonut.data.datasets[0].backgroundColor = [C.accent, C.orange];
+  chartDonut.update();
+  document.getElementById('elecBreakdown').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi accent"><div class="kpi-label">🔌 Arbeit & WE</div><div class="kpi-val" style="font-size:1rem">${fmt(r.elWork)}</div><div class="kpi-sub">${fmtP(s.elecWork,3)}€/kWh</div></div>
+      <div class="kpi orange"><div class="kpi-label">🛣️ Urlaub</div><div class="kpi-val" style="font-size:1rem">${fmt(r.elHol)}</div><div class="kpi-sub">${fmtP(s.elecHoliday)}€/kWh</div></div>
+    </div>`;
+
+  // TCO Table
+  const tcoBody = document.getElementById('tcoBody');
+  let bC = bP, eC = eP;
+  tcoBody.innerHTML = Array.from({length:5}, (_,i) => {
+    bC += r.benzinTotal; eC += r.elTotal;
+    const adv = bC - eC;
+    return `<tr>
+      <td><strong>Jahr ${i+1}</strong></td>
+      <td>${fmt(r.benzinTotal)}</td>
+      <td style="color:var(--orange)">${fmt(bC)}</td>
+      <td>${fmt(r.elTotal)}</td>
+      <td style="color:var(--accent)">${fmt(eC)}</td>
+      <td><span class="diff ${adv>0?'pos':'neg'}">${adv>0?'+':''}${fmt(adv)}</span></td>
+    </tr>`;
+  }).join('');
+
+  // Recommendation
+  updateRecommendation(r, s, elCar);
+}
+
+function updateRecommendation(r, s, elCar) {
+  const title = document.getElementById('recTitle');
+  const body  = document.getElementById('recBody');
+  const isEV  = elCar.type === 'elektro';
+
+  if (!isEV) {
+    title.textContent = '🔍 Wähle ein Elektroauto zum Vergleich';
+    body.textContent = 'Klicke auf einen der Elektro-Chips oben, um einen sinnvollen Vergleich zu sehen.';
+    return;
+  }
+
+  const breakeven = r.amortYears;
+  const priceDiff = s.price - elCar.price;
+
+  if (breakeven <= 4 && r.savings > 0) {
+    title.innerHTML = '⚡ <span style="color:var(--accent)">Elektro lohnt sich!</span>';
+    body.innerHTML = `Bei ${breakeven.toFixed(1)} Jahren Break-Even und ${Math.round(r.savings).toLocaleString('de-DE')}€ Ersparnis/Jahr ist <strong>${elCar.name}</strong> die klügere Wahl. Dein Ladeprofil (Arbeit 37,5 Ct) ist ideal – kein Heimladen nötig. Nur der Urlaub (59 Ct/kWh) kostet etwas mehr.`;
+  } else if (breakeven <= 7 && r.savings > 0) {
+    title.innerHTML = '⚖️ <span style="color:var(--orange)">Knapp – gut überlegen</span>';
+    body.innerHTML = `Break-Even nach ca. ${breakeven.toFixed(1)} Jahren. Wenn du das Auto 6–8 Jahre fährst, lohnt Elektro. Beim aktuellen Benzinpreis (${s.fuel.toFixed(2)}€/L) und deinen ~${r.totalKm.toLocaleString('de-DE')} km/J ist der Vorteil überschaubar. Steigt Benzin auf 2,20€+, kippt die Rechnung deutlich.`;
+  } else if (r.savings < 0) {
+    title.innerHTML = '🔑 <span style="color:var(--orange)">Benziner günstiger</span>';
+    body.innerHTML = `Beim gewählten Elektromodell übersteigen Kaufpreis und laufende Kosten den Benziner-Vorteil. Überlege: Kona Elektro ist ~${(s.price - CARS['kona'].price).toLocaleString('de-DE')}€ günstiger im Kauf. Oder erhöhe den Benzinpreis-Slider – bei 2,20€+ ändert sich das Bild.`;
+  } else {
+    title.innerHTML = '📈 <span style="color:var(--purple)">Langfristig Elektro</span>';
+    body.innerHTML = `Break-Even nach ${breakeven.toFixed(1)} Jahren – Elektro lohnt langfristig. Für dich besonders relevant: Das Ölpreis-Risiko durch geopolitische Lage. Jede 10-Cent-Erhöhung beim Benzin kostet dich ~${Math.round(r.totalKm/100*CARS.tucson.consumption*0.1).toLocaleString('de-DE')}€/Jahr extra.`;
+  }
+}
+
+// ── SYNC ─────────────────────────────────────────────────────────────────────
+function syncSliders() {
+  const g = id => parseFloat(document.getElementById(id).value);
+  const gi = id => parseInt(document.getElementById(id).value) || 0;
+  state.work     = gi('sWork');
+  state.days     = gi('sDays');
+  state.holiday  = gi('sHoliday');
+  state.weekend  = gi('sWeekend');
+  state.fuel     = g('sFuel');
+  state.elecWork    = g('sElecWork');
+  state.elecHoliday = g('sElecHoliday');
+  state.co2Price = gi('sCO2');
+  state.price      = parseFloat(document.getElementById('iPrice').value) || 28000;
+  state.insurance  = parseFloat(document.getElementById('iInsurance').value) || 900;
+  state.maint      = parseFloat(document.getElementById('iMaint').value) || 600;
+  state.kfzSteuer  = parseFloat(document.getElementById('iKfzSteuer').value) || 182;
+}
+
+// ── CAR SELECT ────────────────────────────────────────────────────────────────
+function selectCar(id) {
+  state.selectedCar = id;
+  const car = CARS[id];
+  // Update chips
+  document.querySelectorAll('.car-chip').forEach(c => {
+    c.className = 'car-chip';
+    if (c.dataset.id === id) {
+      c.className = 'car-chip active-' + (car.type === 'elektro' ? 'elektro' : 'benzin');
+    }
+  });
+  // Update car info
+  const infoEl = document.getElementById('carInfo');
+  infoEl.innerHTML = `
+    <div class="info-row">
+      <span class="info-icon">${car.icon}</span>
+      <div>
+        <strong>${car.name}</strong>
+        <span>${car.note}</span>
+      </div>
+    </div>`;
+
+  // Prefill custom fields with car defaults
+  if (id !== 'tucson') {
+    document.getElementById('iPrice').value     = car.price;
+    document.getElementById('iInsurance').value = car.insurance;
+    document.getElementById('iMaint').value     = car.maint;
+    document.getElementById('iKfzSteuer').value = car.tax;
+    document.getElementById('steuerNote').textContent = car.type === 'elektro'
+      ? '⚡ Elektro: 10 Jahre steuerfrei (§3d KraftStG)'
+      : `${car.name} ~${car.tax}€/Jahr`;
+  } else {
+    document.getElementById('iPrice').value     = 28000;
+    document.getElementById('iInsurance').value = 900;
+    document.getElementById('iMaint').value     = 600;
+    document.getElementById('iKfzSteuer').value = 182;
+    document.getElementById('steuerNote').textContent = 'Tucson 1.6 GTDI ~182€/Jahr';
+  }
+  update();
+}
+
+// ── SCENARIO ─────────────────────────────────────────────────────────────────
+function setScenario(n) {
+  state.scenario = n;
+  ['s1','s2','custom'].forEach((id,i) => {
+    document.getElementById('tab-' + id).className = 'tab' + (n === (i===2?0:i+1) ? ' active' : '');
+  });
+  if (n === 1) { document.getElementById('sFuel').value = '2.00'; }
+  if (n === 2) { document.getElementById('sFuel').value = '1.80'; }
+  update();
+}
+
+function scenarioCustom() {
+  state.scenario = 0;
+  ['s1','s2','custom'].forEach(id => {
+    document.getElementById('tab-' + id).className = 'tab' + (id === 'custom' ? ' active' : '');
+  });
+}
+
+// ── THEME ─────────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const root = document.documentElement;
+  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '🌙' : '☀️';
+  localStorage.setItem('autoDash_theme', next);
+  // Rebuild charts with new colors
+  setTimeout(() => {
+    chartBar.destroy(); chartLine.destroy(); chartDonut.destroy();
+    initCharts(); update();
+  }, 50);
+}
+
+// ── LOCALSTORAGE ──────────────────────────────────────────────────────────────
+function saveState() {
+  try {
+    localStorage.setItem('autoDash_state', JSON.stringify(state));
+    const badge = document.getElementById('saveBadge');
+    badge.classList.add('show');
+    clearTimeout(saveState._t);
+    saveState._t = setTimeout(() => badge.classList.remove('show'), 1500);
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('autoDash_state');
+    if (saved) {
+      const s = JSON.parse(saved);
+      Object.assign(state, s);
+      // Apply to DOM
+      const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+      set('sWork', state.work); set('sDays', state.days);
+      set('sHoliday', state.holiday); set('sWeekend', state.weekend);
+      set('sFuel', state.fuel); set('sElecWork', state.elecWork);
+      set('sElecHoliday', state.elecHoliday); set('sCO2', state.co2Price);
+      set('iPrice', state.price); set('iInsurance', state.insurance);
+      set('iMaint', state.maint); set('iKfzSteuer', state.kfzSteuer);
+      if (state.selectedCar) selectCar(state.selectedCar);
+      if (state.scenario) setScenario(state.scenario);
+    }
+    const theme = localStorage.getItem('autoDash_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('themeBtn').textContent = theme === 'dark' ? '🌙' : '☀️';
+  } catch(e) {}
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  loadState();
+  selectCar(state.selectedCar || 'tucson');
+  setScenario(state.scenario || 1);
+  update();
+});
+</script>
 </body>
 </html>
