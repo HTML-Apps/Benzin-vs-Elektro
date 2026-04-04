@@ -301,7 +301,7 @@
 
                     <tr class="savings-row">
                         <td>Ersparnis</td>
-                        <td id="res_savings_final" style="text-align:right;">0 €</td>
+                        <td colspan="3" id="res_savings_final" style="text-align:center;">0 €</td>
                     </tr>
                 </tbody>
             </table>
@@ -437,8 +437,8 @@
             updateChart([energieBenzin, versBenzin, wartungBenzin, steuerBenzin], 
                         [energieElektro, versElektro, wartungElektro, steuerElektro]);
 
-            // Berechne die Differenz (hast du bereits als 'diff' im Code)
-            const diff = totalB - totalE;
+            // Berechne die Differenz
+            const diff = totalBenzin - totalElektro;
 
             // Suche die Stelle, wo die Tabellenwerte gesetzt werden und füge dies hinzu:
             const savingsElement = document.getElementById('res_savings_final');
