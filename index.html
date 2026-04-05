@@ -116,6 +116,12 @@
     .col-span-2 { grid-column: 1 / -1; }
     .kpi-val { font-size: 1.1rem; }
     #co2-card { width: 92% }
+    #kostenstruktur { width: 92% }
+    #kumuliert { width: 92% }
+    #energiekosten { width: 92% }
+    #verfügbar { display: none; }
+    #empfehlung { width: 92% }
+    #fünfjahre { width: 92% }
   }
   @media (max-width: 640px) {
     .main { padding: 12px 12px 48px; }
@@ -133,6 +139,12 @@
     .year-table { font-size: 0.72rem; }
     .year-table th, .year-table td { padding: 5px 6px; }
     #co2-card { width: 92% }
+    #kostenstruktur { width: 92% }
+    #kumuliert { width: 92% }
+    #energiekosten { width: 92% }
+    #verfügbar { display: none; }
+    #empfehlung { width: 92% }
+    #fünfjahre { width: 92% }
   }
 
   /* ── CARDS ── */
@@ -610,7 +622,7 @@
   <div class="grid-3">
 
     <!-- Balkendiagramm Kostenvergleich -->
-    <div class="card">
+    <div id="kostenstruktur" class="card">
       <div class="card-header">
         <div class="card-title">Kostenstruktur Vergleich</div>
       </div>
@@ -620,7 +632,7 @@
     </div>
 
     <!-- Linienchart Kumulierte Kosten -->
-    <div class="card">
+    <div id="kumuliert" class="card">
       <div class="card-header">
         <div class="card-title">Kumulierte Kosten über 10 Jahre</div>
       </div>
@@ -634,7 +646,7 @@
     </div>
 
     <!-- Donut Energiekosten -->
-    <div class="card">
+    <div id="energiekosten" class="card">
       <div class="card-header">
         <div class="card-title">Energiekosten Elektro Aufteilung</div>
       </div>
@@ -647,7 +659,7 @@
   </div>
 
   <!-- ═══ ROW 5: Elektro Alternativen + Empfehlung ═══ -->
-  <div class="section-label">🔌 Elektro-Alternativen im Überblick</div>
+  <div id="verfügbar" class="section-label">🔌 Elektro-Alternativen im Überblick</div>
   <div class="grid-3">
 
     <div class="card col-span-2">
@@ -731,7 +743,7 @@
     </div>
 
     <!-- Empfehlung -->
-    <div class="card">
+    <div id="empfehlung" class="card">
       <div class="card-header">
         <div class="card-title">🎯 Meine Empfehlung</div>
       </div>
@@ -758,7 +770,7 @@
   </div>
 
   <!-- ═══ ROW 6: 5-Jahres Tabelle ═══ -->
-  <div class="section-label">📅 5-Jahres Projektion</div>
+  <div id="fünfjahre" class="section-label">📅 5-Jahres Projektion</div>
   <div class="grid-3">
     <div class="card col-span-3">
       <div class="card-header">
