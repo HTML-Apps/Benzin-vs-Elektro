@@ -115,6 +115,7 @@
     /* col-span-2 on a 2-col grid = full width too – make it explicit */
     .col-span-2 { grid-column: 1 / -1; }
     .kpi-val { font-size: 1.1rem; }
+    #co2-card { width: 92% }
   }
   @media (max-width: 640px) {
     .main { padding: 12px 12px 48px; }
@@ -131,6 +132,7 @@
     .comp-table th, .comp-table td { padding: 7px 8px; }
     .year-table { font-size: 0.72rem; }
     .year-table th, .year-table td { padding: 5px 6px; }
+    #co2-card { width: 92% }
   }
 
   /* ── CARDS ── */
@@ -577,7 +579,7 @@
     </div>
 
     <!-- CO2 -->
-    <div class="card">
+    <div id="co2-card" class="card">
       <div class="card-header">
         <div class="card-title">🌱 CO₂-Bilanz</div>
       </div>
