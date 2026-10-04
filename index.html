@@ -33,9 +33,9 @@
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4">
       <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Aktueller Zählerstand</p>
-      <div class="lcd rounded-xl px-4 py-4 flex items-end justify-end gap-2">
-        <span class="seg-wrap seg text-5xl"><span class="seg-ghost">888888.8</span><span id="dash-reading" class="seg-on">000000.0</span></span>
-        <span class="text-sm pb-1">kWh</span>
+      <div id="seg-box" class="lcd rounded-xl px-3 py-4 flex items-end justify-end gap-2">
+        <span id="seg-wrap" class="seg-wrap seg"><span class="seg-ghost">888888.8</span><span id="dash-reading" class="seg-on">000000.0</span></span>
+        <span id="seg-unit" class="text-sm pb-1">kWh</span>
       </div>
       <div class="grid grid-cols-2 gap-3 mt-4">
         <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3">
@@ -98,7 +98,14 @@
 
   <!-- ============ VIEW: HISTORIE ============ -->
   <section id="view-history" class="view hidden space-y-4">
-    <h1 class="text-xl font-semibold">Historie</h1>
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl font-semibold">Historie</h1>
+      <div class="flex gap-2">
+        <button id="btn-edit" class="px-4 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-sm font-medium active:scale-95 transition">Bearbeiten</button>
+        <button id="btn-edit-cancel" class="hidden px-4 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-sm font-medium active:scale-95 transition">Abbrechen</button>
+        <button id="btn-edit-save" class="hidden px-4 py-1.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold active:scale-95 transition">Speichern</button>
+      </div>
+    </div>
     <p id="history-empty" class="hidden text-center text-sm text-slate-500 py-8">Noch keine Zählerstände erfasst.</p>
     <ul id="history-list" class="space-y-3"></ul>
   </section>
@@ -177,7 +184,9 @@ function showView(name) {
   if (name === 'capture') startCamera(); else stopCamera();
   if (name === 'dashboard') renderDashboard();
   if (name === 'settings') fillSettings();
+  if (name !== 'history' && editMode) setEditMode(false);
   if (name === 'history') renderHistory();
+  if (name === 'dashboard') fitSeg();
 }
 document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
 
@@ -397,29 +406,117 @@ document.querySelectorAll('.range-btn').forEach(b => b.addEventListener('click',
    Historie: Liste aller Zählerstände, neueste zuerst
    ===================================================================== */
 const WEEKDAYS = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+let editMode = false;
+
+const INPUT_CLS = 'w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500';
+const toLocalInput = (iso) => {                       // ISO-Datum -> Wert für <input type="datetime-local">
+  const d = new Date(iso), p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+const cell = (i, f) => $('history-list').querySelector(`li[data-idx="${i}"] [data-f="${f}"]`);
+
+function setEditMode(on) {
+  editMode = on;
+  $('btn-edit').classList.toggle('hidden', on);
+  $('btn-edit-cancel').classList.toggle('hidden', !on);
+  $('btn-edit-save').classList.toggle('hidden', !on);
+  renderHistory();
+}
 
 function renderHistory() {
   const readings = getReadings();
   $('history-empty').classList.toggle('hidden', readings.length > 0);
+  $('btn-edit').classList.toggle('hidden', editMode || readings.length === 0);
+  const lbl = 'text-xs text-slate-500 dark:text-slate-400';
+
   $('history-list').innerHTML = readings.map((r, i) => {
     const d = new Date(r.date);
     const oldVal = i > 0 ? readings[i - 1].totalReading : null;      // alter Stand = Wert des Vorgängers
+
+    if (editMode) {
+      return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4 ring-2 ring-emerald-500/40">
+        <input type="datetime-local" data-f="date" value="${toLocalInput(r.date)}" class="${INPUT_CLS}">
+        <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+          <div><p class="${lbl} mb-1">Alt</p>${oldVal === null ? '<p class="py-2">–</p>'
+            : `<input data-f="old" type="text" inputmode="decimal" value="${oldVal.toFixed(1)}" class="${INPUT_CLS}">`}</div>
+          <div><p class="${lbl} mb-1">Neu</p><input data-f="new" type="text" inputmode="decimal" value="${r.totalReading.toFixed(1)}" class="${INPUT_CLS}"></div>
+          <div><p class="${lbl} mb-1">Geladen</p><p data-f="diff" class="py-2 font-semibold text-emerald-700 dark:text-emerald-300">–</p></div>
+        </div>
+      </li>`;
+    }
+
     const date = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
                  ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
-    return `<li class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4">
+    return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4">
       <div class="flex justify-between items-baseline">
         <span class="font-semibold">${WEEKDAYS[d.getDay()]}</span>
         <span class="text-sm text-slate-500 dark:text-slate-400">${date}</span>
       </div>
       <div class="grid grid-cols-3 gap-2 mt-3 text-center">
-        <div><p class="text-xs text-slate-500 dark:text-slate-400">Alt</p><p class="font-medium">${oldVal === null ? '–' : fmt(oldVal)}</p></div>
-        <div><p class="text-xs text-slate-500 dark:text-slate-400">Neu</p><p class="font-medium">${fmt(r.totalReading)}</p></div>
-        <div class="rounded-xl bg-emerald-50 dark:bg-emerald-950/50 py-1"><p class="text-xs text-slate-500 dark:text-slate-400">Geladen</p>
+        <div><p class="${lbl}">Alt</p><p class="font-medium">${oldVal === null ? '–' : fmt(oldVal)}</p></div>
+        <div><p class="${lbl}">Neu</p><p class="font-medium">${fmt(r.totalReading)}</p></div>
+        <div class="rounded-xl bg-emerald-50 dark:bg-emerald-950/50 py-1"><p class="${lbl}">Geladen</p>
           <p class="font-semibold text-emerald-700 dark:text-emerald-300">${oldVal === null ? '–' : fmt(r.consumedSinceLast) + ' kWh'}</p></div>
       </div>
     </li>`;
-  }).reverse().join('');
+  }).reverse().join('');                                // neueste zuerst
+  if (editMode) updateDiffs();
 }
+
+/** Berechnet im Bearbeitungsmodus live die geladenen kWh aus den Eingabefeldern. */
+function updateDiffs() {
+  const n = getReadings().length;
+  for (let i = 0; i < n; i++) {
+    const neu = parseNum(cell(i, 'new').value), old = i > 0 ? parseNum(cell(i - 1, 'new').value) : NaN;
+    cell(i, 'diff').textContent = (i > 0 && isFinite(neu) && isFinite(old)) ? fmt(Math.max(0, neu - old)) + ' kWh' : '–';
+  }
+}
+
+// "Alt" eines Eintrags und "Neu" des Vorgängers sind derselbe Wert -> immer gemeinsam aktualisieren
+$('history-list').addEventListener('input', (e) => {
+  if (!editMode || !e.target.dataset.f) return;
+  const i = +e.target.closest('li').dataset.idx, f = e.target.dataset.f;
+  if (f === 'new' && cell(i + 1, 'old')) cell(i + 1, 'old').value = e.target.value;
+  if (f === 'old' && cell(i - 1, 'new')) cell(i - 1, 'new').value = e.target.value;
+  updateDiffs();
+});
+
+$('btn-edit').addEventListener('click', () => setEditMode(true));
+$('btn-edit-cancel').addEventListener('click', () => setEditMode(false));
+$('btn-edit-save').addEventListener('click', () => {
+  const stored = getReadings(), currentPrice = getSettings().price;
+  const items = stored.map((r, i) => ({
+    r, date: new Date(cell(i, 'date').value), neu: Math.round(parseNum(cell(i, 'new').value) * 10) / 10
+  }));
+  if (items.some(x => isNaN(x.date) || !isFinite(x.neu) || x.neu < 0)) { alert('Bitte gültige Datums- und Zählerstandswerte eingeben.'); return; }
+
+  items.sort((a, b) => a.date - b.date);                 // chronologisch, falls Datum geändert wurde
+  if (items.some((x, i) => i > 0 && x.neu < items[i - 1].neu) &&
+      !confirm('Mindestens ein Zählerstand ist kleiner als der vorherige. Trotzdem speichern?')) return;
+
+  const result = items.map((x, i) => {
+    // Preis pro kWh des Eintrags beibehalten (aus den gespeicherten Werten), sonst aktueller Preis
+    const unitPrice = x.r.consumedSinceLast > 0 ? x.r.cost / x.r.consumedSinceLast : currentPrice;
+    const consumed = i > 0 ? Math.max(0, Math.round((x.neu - items[i - 1].neu) * 10) / 10) : 0;
+    return { id: x.r.id, date: x.date.toISOString(), totalReading: x.neu, consumedSinceLast: consumed, cost: consumed * unitPrice };
+  });
+  if (save(KEY_READINGS, result)) setEditMode(false);
+});
+
+/* =====================================================================
+   7-Segment-Anzeige: Schriftgröße automatisch an die verfügbare Breite anpassen
+   ===================================================================== */
+function fitSeg() {
+  const box = $('seg-box'), wrap = $('seg-wrap');
+  if (!box || !box.clientWidth) return;                  // View nicht sichtbar
+  const cs = getComputedStyle(box);
+  const avail = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - $('seg-unit').offsetWidth - 8;
+  wrap.style.fontSize = '100px';
+  const w = wrap.firstElementChild.getBoundingClientRect().width;     // Breite des "888888.8" bei 100 px
+  wrap.style.fontSize = Math.max(20, Math.min(56, Math.floor(100 * avail / w))) + 'px';
+}
+window.addEventListener('resize', fitSeg);
+if (document.fonts) document.fonts.ready.then(fitSeg);
 
 showView('dashboard');
 </script>
