@@ -466,7 +466,7 @@ function renderHistory() {
           <p class="font-semibold text-emerald-700 dark:text-emerald-300">${oldVal === null ? '–' : fmt(r.consumedSinceLast) + ' kWh'}</p></div>
       </div>
       <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-        <span class="text-sm text-slate-500 dark:text-slate-400">Kosten${oldVal !== null && r.consumedSinceLast > 0 ? ` <span class="text-xs">(${fmt(unitPriceOf(r), 2)} €/kWh)</span>` : ''}</span>
+        <span class="text-sm text-slate-500 dark:text-slate-400">Kosten${oldVal !== null && r.consumedSinceLast > 0 ? ` <span class="text-xs">(${fmt(unitPriceOf(r), 3)} €/kWh)</span>` : ''}</span>
         <span class="text-lg font-semibold">${oldVal === null ? '–' : eur(r.cost)}</span>
       </div>
     </li>`;
