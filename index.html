@@ -19,6 +19,16 @@
   .seg-wrap { position: relative; display: inline-block; line-height: 1; }
   .seg-ghost { opacity: .13; }                      /* nicht leuchtende Segmente */
   .seg-on { position: absolute; right: 0; top: 0; text-shadow: 0 0 8px rgba(190,215,255,.7); }
+  /* Phasen-LEDs L1/L2/L3 wie am Zähler: ohne Last gedimmt, im Live-Modus pulsierend (leicht versetzt) */
+  .phase-led { width: 11px; height: 11px; border-radius: 50%; opacity: .3; transition: opacity .4s; }
+  .phase-led.l1 { background: #fbbf24; box-shadow: 0 0 7px #fbbf24; }
+  .phase-led.l2 { background: #22c55e; box-shadow: 0 0 7px #22c55e; }
+  .phase-led.l3 { background: #ef4444; box-shadow: 0 0 7px #ef4444; }
+  .live-on .phase-led { animation: ledpulse 1.4s ease-in-out infinite; }
+  .live-on .phase-led.l2 { animation-delay: .25s; }
+  .live-on .phase-led.l3 { animation-delay: .5s; }
+  @keyframes ledpulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .live-on .phase-led { animation: none; opacity: 1; } }
   .spinner { width:22px;height:22px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -42,7 +52,14 @@
         <span id="seg-wrap" class="seg-wrap seg"><span class="seg-ghost">888888.8</span><span id="dash-reading" class="seg-on">000000.0</span></span>
         <span id="seg-unit" class="text-sm pb-1">kWh</span>
       </div>
-      <p id="live-info" class="hidden text-xs text-center text-slate-500 dark:text-slate-400 mt-2"></p>
+      <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mt-3">
+        <p id="live-info" class="hidden text-[11px] tabular-nums whitespace-nowrap text-slate-500 dark:text-slate-400"></p>
+        <div id="phase-leds" class="flex items-center gap-3 ml-auto">
+          <span class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"><span class="phase-led l1"></span>L1</span>
+          <span class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"><span class="phase-led l2"></span>L2</span>
+          <span class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"><span class="phase-led l3"></span>L3</span>
+        </div>
+      </div>
       <div class="grid grid-cols-2 gap-3 mt-4">
         <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3">
           <p class="text-xs text-slate-500 dark:text-slate-400">Letzte Ladung</p>
@@ -439,6 +456,7 @@ function renderLive() {
   ['animate-pulse', 'bg-red-600', 'text-white'].forEach(c => btn.classList.toggle(c, on));        // Button pulsiert, solange Live aktiv ist
   ['bg-slate-200', 'dark:bg-slate-800'].forEach(c => btn.classList.toggle(c, !on));
   $('live-dot').classList.toggle('bg-white', on); $('live-dot').classList.toggle('bg-slate-400', !on);
+  $('phase-leds').classList.toggle('live-on', on);                                              // Phasen-LEDs pulsieren nur im Live-Modus
   $('dash-title').textContent = on ? 'Live-Simulation · ' + CHARGE_POWER_KW + ' kW' : 'Aktueller Zählerstand';
   $('live-info').classList.toggle('hidden', !on);
   if (!on) return;
@@ -450,7 +468,7 @@ function renderLive() {
   $('dash-last-kwh').textContent = fmt(kwh, 2) + ' kWh';
 
   const s = Math.floor(elapsedMs / 1000), start = new Date(live.startedAt);
-  $('live-info').textContent = 'Gestartet um ' + pad2(start.getHours()) + ':' + pad2(start.getMinutes()) + ' Uhr · Dauer ' +
+  $('live-info').textContent = 'Start ' + pad2(start.getHours()) + ':' + pad2(start.getMinutes()) + ' Uhr · Dauer ' +
                                Math.floor(s / 3600) + ':' + pad2(Math.floor(s % 3600 / 60)) + ':' + pad2(s % 60);
 }
 
