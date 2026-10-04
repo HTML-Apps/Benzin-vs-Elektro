@@ -6,8 +6,6 @@
 <title>Enyaq Ladekosten</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/x-icon" href="favicon.ico">
 <style>
   /* Dark-Mode folgt dem System (Tailwind-CDN: darkMode = media) */
   body { padding-top: env(safe-area-inset-top); -webkit-tap-highlight-color: transparent; }
@@ -34,11 +32,17 @@
     <h1 class="text-xl font-semibold">Enyaq Ladekosten</h1>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4">
-      <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Aktueller Zählerstand</p>
+      <div class="flex items-center justify-between mb-2">
+        <p id="dash-title" class="text-sm text-slate-500 dark:text-slate-400">Aktueller Zählerstand</p>
+        <button id="btn-live" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-slate-200 dark:bg-slate-800 transition active:scale-95">
+          <span id="live-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>Live
+        </button>
+      </div>
       <div id="seg-box" class="lcd rounded-xl px-3 py-4 flex items-end justify-end gap-2">
         <span id="seg-wrap" class="seg-wrap seg"><span class="seg-ghost">888888.8</span><span id="dash-reading" class="seg-on">000000.0</span></span>
         <span id="seg-unit" class="text-sm pb-1">kWh</span>
       </div>
+      <p id="live-info" class="hidden text-xs text-center text-slate-500 dark:text-slate-400 mt-2"></p>
       <div class="grid grid-cols-2 gap-3 mt-4">
         <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3">
           <p class="text-xs text-slate-500 dark:text-slate-400">Letzte Ladung</p>
@@ -118,7 +122,7 @@
     <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-4">
       <div>
         <label for="set-price" class="text-sm text-slate-500 dark:text-slate-400">Strompreis in € pro kWh</label>
-        <input id="set-price" type="text" inputmode="decimal" placeholder="0,35"
+        <input id="set-price" type="text" inputmode="decimal" placeholder="0,307"
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
       </div>
       <div>
@@ -299,6 +303,7 @@ $('btn-save').addEventListener('click', () => {
   const cost = consumed * getSettings().price;
   readings.push({ id: Date.now(), date: new Date().toISOString(), totalReading: value, consumedSinceLast: consumed, cost });
   if (!save(KEY_READINGS, readings)) return;
+  stopLive(false);                                       // echter Wert erfasst -> Simulation beenden
 
   flash($('save-msg'), 'Gespeichert: ' + fmt(consumed) + ' kWh, ' + eur(cost), true);
   $('save-msg').classList.remove('hidden');
@@ -315,7 +320,7 @@ function fillSettings() {
 }
 $('btn-save-settings').addEventListener('click', () => {
   const price = parseNum($('set-price').value);
-  if (!isFinite(price) || price < 0) { alert('Bitte einen gültigen Strompreis eingeben (z. B. 0,35).'); return; }
+  if (!isFinite(price) || price < 0) { alert('Bitte einen gültigen Strompreis eingeben (z. B. 0,307).'); return; }
   if (save(KEY_SETTINGS, { price, pin: $('set-key').value.trim() })) {
     $('settings-msg').classList.remove('hidden'); setTimeout(() => $('settings-msg').classList.add('hidden'), 2500);
   }
@@ -395,11 +400,60 @@ function renderChart() {
   });
 }
 
+/* =====================================================================
+   Live-Modus (Simulation einer laufenden Ladung)
+   Gespeichert wird nur ein Zeitstempel: { startedAt, baseReading, price }.
+   Alle Live-Werte werden daraus berechnet -> stimmen auch nach Neuladen/Schließen der App.
+   ===================================================================== */
+const CHARGE_POWER_KW = 7;       // Ladeleistung des Enyaq (fest hinterlegt)
+const LIVE_SPEED = 1;            // 1 = Echtzeit. Zum Testen z. B. 60 setzen (1 Minute entspricht 1 Stunde Laden)
+const KEY_LIVE = 'enyaq.live';
+let liveTimer = null;
+
+const getLive = () => load(KEY_LIVE, null);
+const pad2 = (n) => String(n).padStart(2, '0');
+
+function renderLive() {
+  const live = getLive(), on = !!live;
+  const btn = $('btn-live');
+  ['animate-pulse', 'bg-red-600', 'text-white'].forEach(c => btn.classList.toggle(c, on));        // Button pulsiert, solange Live aktiv ist
+  ['bg-slate-200', 'dark:bg-slate-800'].forEach(c => btn.classList.toggle(c, !on));
+  $('live-dot').classList.toggle('bg-white', on); $('live-dot').classList.toggle('bg-slate-400', !on);
+  $('dash-title').textContent = on ? 'Live-Simulation · ' + CHARGE_POWER_KW + ' kW' : 'Aktueller Zählerstand';
+  $('live-info').classList.toggle('hidden', !on);
+  if (!on) return;
+
+  const elapsedMs = Date.now() - live.startedAt;
+  const kwh = Math.max(0, elapsedMs / 3600000 * LIVE_SPEED) * CHARGE_POWER_KW;       // kWh = Stunden x kW
+  $('dash-reading').textContent = (live.baseReading + kwh).toFixed(1).padStart(8, '0');
+  $('dash-last-cost').textContent = eur(kwh * live.price);                           // Kosten = kWh x Preis
+  $('dash-last-kwh').textContent = fmt(kwh, 2) + ' kWh';
+
+  const s = Math.floor(elapsedMs / 1000), start = new Date(live.startedAt);
+  $('live-info').textContent = 'Gestartet um ' + pad2(start.getHours()) + ':' + pad2(start.getMinutes()) + ' Uhr · Dauer ' +
+                               Math.floor(s / 3600) + ':' + pad2(Math.floor(s % 3600 / 60)) + ':' + pad2(s % 60);
+}
+
+function tickLive() { renderLive(); if (!liveTimer) liveTimer = setInterval(renderLive, 1000); }
+
+function startLive() {
+  const readings = getReadings(), last = readings[readings.length - 1];
+  if (save(KEY_LIVE, { startedAt: Date.now(), baseReading: last ? last.totalReading : 0, price: getSettings().price })) tickLive();
+}
+function stopLive(refresh = true) {
+  localStorage.removeItem(KEY_LIVE);
+  clearInterval(liveTimer); liveTimer = null;
+  if (refresh) renderDashboard();                       // alten Zählerstand und echte Werte wieder anzeigen
+}
+$('btn-live').addEventListener('click', () => getLive() ? stopLive() : startLive());
+document.addEventListener('visibilitychange', () => { if (!document.hidden && getLive()) renderLive(); });
+
 function renderDashboard() {
   const readings = getReadings(), last = readings[readings.length - 1];
   $('dash-reading').textContent = (last ? last.totalReading : 0).toFixed(1).padStart(8, '0');   // 6 Stellen + Komma + 1 Nachkommastelle
   $('dash-last-cost').textContent = last ? eur(last.cost) : '–';
   $('dash-last-kwh').textContent = last ? fmt(last.consumedSinceLast) + ' kWh' : '–';
+  renderLive();                                          // überschreibt die Werte, falls der Live-Modus läuft
   renderChart();
 }
 document.querySelectorAll('.range-btn').forEach(b => b.addEventListener('click', () => { range = b.dataset.range; renderChart(); }));
@@ -531,7 +585,14 @@ function fitSeg() {
 window.addEventListener('resize', fitSeg);
 if (document.fonts) document.fonts.ready.then(fitSeg);
 
+/* Service Worker registrieren (funktioniert nur über https:// oder localhost, nicht über file://) */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service Worker:', err)));
+}
+
+if (getLive()) tickLive();                              // Live-Modus nach Neuladen fortsetzen
 showView('dashboard');
 </script>
 </body>
 </html>
+
