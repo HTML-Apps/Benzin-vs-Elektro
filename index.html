@@ -1,246 +1,380 @@
 <!DOCTYPE html>
-<html lang="de" class="light">
+<html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Total Cost of Ownership: Enyaq vs. Tucson</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        slate: { 850: '#151e2e' }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Ein kleiner Trick, um die Nummer-Input Pfeile auszublenden für einen cleaneren Look */
-        input[type="number"]::-webkit-inner-spin-button, 
-        input[type="number"]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; margin: 0; 
-        }
-        input[type="number"] { -moz-appearance: textfield; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Enyaq Ladekosten</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  /* Dark-Mode folgt dem System (Tailwind-CDN: darkMode = media) */
+  body { padding-top: env(safe-area-inset-top); -webkit-tap-highlight-color: transparent; }
+  .lcd { background: linear-gradient(180deg,#1e4fd8,#2f6bff); color:#eaf2ff; font-family: ui-monospace,Menlo,Consolas,monospace;
+         font-variant-numeric: tabular-nums; letter-spacing:.06em; box-shadow: inset 0 2px 8px rgba(0,0,0,.35); }
+  .tab-active { color:#059669; } .dark-tab-active { color:#34d399; }
+  @media (prefers-color-scheme: dark){ .tab-active{ color:#34d399; } }
+  .spinner { width:22px;height:22px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 transition-colors duration-300 min-h-screen py-8 px-4">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen">
 
-    <div class="max-w-6xl mx-auto">
-        <!-- Header & Theme Toggle -->
-        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-            <div>
-                <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                    Mobilitäts-Kostenvergleich (TCO)
-                </h1>
-                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                    Jahreskosten inklusive Verbrauch, Versicherung, Steuern & Wartung.
-                </p>
-            </div>
-            <button onclick="toggleTheme()" class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition text-sm font-medium">
-                <span id="theme-icon">🌙</span> <span id="theme-text">Dark Mode</span>
-            </button>
-        </header>
+<main class="max-w-xl mx-auto px-4 pt-5 pb-28">
 
-        <!-- Top Banner: Gewinner -->
-        <div id="winner-banner" class="mb-8 p-6 rounded-2xl shadow-sm border text-center transition-all duration-500 font-bold text-xl">
-            Lade Daten...
+  <!-- ============ VIEW 1: DASHBOARD ============ -->
+  <section id="view-dashboard" class="view space-y-4">
+    <h1 class="text-xl font-semibold">Enyaq Ladekosten</h1>
+
+    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4">
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Aktueller Zählerstand</p>
+      <div class="lcd rounded-xl px-4 py-3 text-right text-4xl"><span id="dash-reading">–</span> <span class="text-base">kWh</span></div>
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3">
+          <p class="text-xs text-slate-500 dark:text-slate-400">Letzte Ladung</p>
+          <p id="dash-last-cost" class="text-2xl font-semibold text-emerald-700 dark:text-emerald-300">–</p>
         </div>
-
-        <!-- Hauptbereich: 2 Spalten -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            <!-- Sektion: Skoda Enyaq -->
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 xl:p-8 transition-colors">
-                <div class="flex items-center space-x-3 mb-6">
-                    <div class="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl text-emerald-600 dark:text-emerald-400 font-bold text-xl">⚡</div>
-                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Skoda Enyaq <span class="text-sm font-normal text-slate-400">(Elektro)</span></h2>
-                </div>
-                
-                <div class="space-y-6">
-                    <!-- Verbrauch -->
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-700 pb-2 mb-3">Energie & Laufleistung</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Strompreis (€/kWh)</label>
-                                <input type="number" id="strom-preis" value="0.30" step="0.01" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Verbrauch (kWh/100km)</label>
-                                <input type="number" id="strom-verbrauch" value="15.0" step="0.1" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            </div>
-                            <div class="col-span-2">
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Kilometer pro Jahr</label>
-                                <input type="number" id="km-e" value="12000" step="1000" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Fixkosten -->
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-700 pb-2 mb-3">Fixkosten pro Jahr</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Versicherung (€)</label>
-                                <input type="number" id="vers-e" value="600" step="10" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">KFZ-Steuer (€)</label>
-                                <input type="number" id="steuer-e" value="0" step="10" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" title="E-Autos sind bis 2030 steuerbefreit">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Wartung (€)</label>
-                                <input type="number" id="wartung-e" value="150" step="10" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">THG-Prämie (€)</label>
-                                <input type="number" id="thg-e" value="100" step="10" oninput="calculate()" class="w-full rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" title="Wird von den Gesamtkosten abgezogen">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Gesamtkosten Enyaq -->
-                <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">
-                    <div class="bg-emerald-50 dark:bg-emerald-900/30 rounded-xl p-5 flex flex-col items-center justify-center">
-                        <span class="block text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-1">Gesamtkosten Enyaq pro Jahr</span>
-                        <span id="total-enyaq" class="text-3xl font-black text-emerald-600 dark:text-emerald-300">0.00 €</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sektion: Hyundai Tucson -->
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 xl:p-8 transition-colors">
-                <div class="flex items-center space-x-3 mb-6">
-                    <div class="p-3 bg-amber-100 dark:bg-amber-900/50 rounded-xl text-amber-600 dark:text-amber-400 font-bold text-xl">⛽</div>
-                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Hyundai Tucson <span class="text-sm font-normal text-slate-400">(Benzin)</span></h2>
-                </div>
-                
-                <div class="space-y-6">
-                    <!-- Verbrauch -->
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-700 pb-2 mb-3">Kraftstoff & Laufleistung</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Benzinpreis (€/Liter)</label>
-                                <input type="number" id="benzin-preis" value="1.75" step="0.01" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Verbrauch (Liter/100km)</label>
-                                <input type="number" id="benzin-verbrauch" value="7.5" step="0.1" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            <div class="col-span-2">
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Kilometer pro Jahr</label>
-                                <input type="number" id="km-b" value="12000" step="1000" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Fixkosten -->
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-700 pb-2 mb-3">Fixkosten pro Jahr</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Versicherung (€)</label>
-                                <input type="number" id="vers-b" value="750" step="10" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">KFZ-Steuer (€)</label>
-                                <input type="number" id="steuer-b" value="150" step="10" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Wartung (€)</label>
-                                <input type="number" id="wartung-b" value="350" step="10" oninput="calculate()" class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" title="inkl. Ölwechsel etc.">
-                            </div>
-                            <div class="opacity-50 pointer-events-none">
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">THG-Prämie (€)</label>
-                                <input type="number" value="0" disabled class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 p-3 text-sm cursor-not-allowed">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Gesamtkosten Tucson -->
-                <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">
-                    <div class="bg-amber-50 dark:bg-amber-900/30 rounded-xl p-5 flex flex-col items-center justify-center">
-                        <span class="block text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Gesamtkosten Tucson pro Jahr</span>
-                        <span id="total-tucson" class="text-3xl font-black text-amber-600 dark:text-amber-400">0.00 €</span>
-                    </div>
-                </div>
-            </div>
-
+        <div class="rounded-2xl bg-sky-50 dark:bg-sky-950/50 p-3">
+          <p class="text-xs text-slate-500 dark:text-slate-400">Geladen</p>
+          <p id="dash-last-kwh" class="text-2xl font-semibold text-sky-700 dark:text-sky-300">–</p>
         </div>
+      </div>
     </div>
 
-    <!-- Berechnungs- & Theme-Logik -->
-    <script>
-        // Theme Toggle Logic
-        function toggleTheme() {
-            const html = document.documentElement;
-            html.classList.toggle('dark');
-            const isDark = html.classList.contains('dark');
-            document.getElementById('theme-icon').innerText = isDark ? '☀️' : '🌙';
-            document.getElementById('theme-text').innerText = isDark ? 'Light Mode' : 'Dark Mode';
-        }
+    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4">
+      <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mb-3" id="range-switch">
+        <button data-range="week"  class="range-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Woche</button>
+        <button data-range="month" class="range-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Monat</button>
+        <button data-range="year"  class="range-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Jahr</button>
+      </div>
+      <p id="chart-title" class="text-sm text-slate-500 dark:text-slate-400 mb-2"></p>
+      <div class="relative h-64"><canvas id="chart"></canvas></div>
+      <p id="chart-empty" class="hidden text-center text-sm text-slate-500 py-6">Noch keine Daten. Erfasse mindestens zwei Zählerstände.</p>
+    </div>
+  </section>
 
-        // Calculation Logic
-        function calculate() {
-            // Hilfsfunktion zum sicheren Auslesen
-            const getVal = (id) => parseFloat(document.getElementById(id).value) || 0;
+  <!-- ============ VIEW 2: ERFASSEN ============ -->
+  <section id="view-capture" class="view hidden space-y-4">
+    <h1 class="text-xl font-semibold">Zählerstand erfassen</h1>
 
-            // --- ENYAQ BERECHNUNG ---
-            const kmE = getVal('km-e');
-            const stromVerbrauch = getVal('strom-verbrauch');
-            const stromPreis = getVal('strom-preis');
-            
-            const stromKosten = (kmE / 100) * stromVerbrauch * stromPreis;
-            const fixKostenE = getVal('vers-e') + getVal('steuer-e') + getVal('wartung-e');
-            const thgE = getVal('thg-e');
-            
-            // THG Prämie wird als Einnahme abgezogen
-            const totalEnyaq = stromKosten + fixKostenE - thgE;
-            
-            // --- TUCSON BERECHNUNG ---
-            const kmB = getVal('km-b');
-            const benzinVerbrauch = getVal('benzin-verbrauch');
-            const benzinPreis = getVal('benzin-preis');
-            
-            const benzinKosten = (kmB / 100) * benzinVerbrauch * benzinPreis;
-            const fixKostenB = getVal('vers-b') + getVal('steuer-b') + getVal('wartung-b');
-            
-            const totalTucson = benzinKosten + fixKostenB;
+    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3">
+      <div class="relative rounded-2xl overflow-hidden bg-black aspect-[3/4]">
+        <video id="video" class="w-full h-full object-cover" autoplay playsinline muted></video>
+        <canvas id="snapshot" class="hidden w-full h-full object-cover absolute inset-0"></canvas>
+        <div id="cam-msg" class="absolute inset-0 flex items-center justify-center text-center text-white text-sm p-6 hidden"></div>
+      </div>
 
-            // --- UI UPDATE ---
-            const fmt = (num) => num.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-            
-            document.getElementById('total-enyaq').innerText = fmt(totalEnyaq);
-            document.getElementById('total-tucson').innerText = fmt(totalTucson);
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btn-shot" class="py-3 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white font-medium active:scale-95 transition">Foto aufnehmen</button>
+        <button id="btn-retake" class="py-3 rounded-2xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Neues Foto</button>
+      </div>
+      <label class="block text-center text-sm text-emerald-700 dark:text-emerald-400 underline cursor-pointer">
+        Stattdessen Bild aus Kamera-App / Galerie wählen
+        <input id="file-input" type="file" accept="image/*" capture="environment" class="hidden">
+      </label>
 
-            // --- GEWINNER ERMITTELN ---
-            const banner = document.getElementById('winner-banner');
-            const differenz = Math.abs(totalEnyaq - totalTucson);
-            const diffFmt = fmt(differenz);
+      <button id="btn-ocr" disabled class="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-600 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-40 active:scale-95 transition">
+        <span id="ocr-spinner" class="spinner hidden"></span><span id="ocr-label">Zählerstand per KI auslesen</span>
+      </button>
+      <p id="ocr-error" class="hidden text-sm text-red-600 dark:text-red-400"></p>
+    </div>
 
-            // Banner Klassen zurücksetzen
-            banner.className = "mb-8 p-6 rounded-2xl shadow-sm border text-center transition-all duration-500 font-bold text-xl lg:text-2xl";
+    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3">
+      <label for="reading-input" class="text-sm text-slate-500 dark:text-slate-400">Zählerstand in kWh (bei Bedarf korrigieren)</label>
+      <input id="reading-input" type="text" inputmode="decimal" placeholder="z. B. 18.7"
+             class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 text-2xl lcd-input focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      <button id="btn-save" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Speichern</button>
+      <p id="save-msg" class="hidden text-sm"></p>
+    </div>
+  </section>
 
-            if (totalEnyaq < totalTucson) {
-                banner.classList.add('bg-emerald-100', 'dark:bg-emerald-900/40', 'border-emerald-300', 'dark:border-emerald-700', 'text-emerald-800', 'dark:text-emerald-300');
-                banner.innerHTML = `🏆 Der Skoda Enyaq ist um <span class="bg-emerald-200 dark:bg-emerald-800 px-2 py-1 rounded-lg">${diffFmt}</span> günstiger pro Jahr!`;
-            } else if (totalTucson < totalEnyaq) {
-                banner.classList.add('bg-amber-100', 'dark:bg-amber-900/40', 'border-amber-300', 'dark:border-amber-700', 'text-amber-800', 'dark:text-amber-300');
-                banner.innerHTML = `⛽ Der Hyundai Tucson ist um <span class="bg-amber-200 dark:bg-amber-800 px-2 py-1 rounded-lg">${diffFmt}</span> günstiger pro Jahr!`;
-            } else {
-                banner.classList.add('bg-slate-100', 'dark:bg-slate-800', 'border-slate-300', 'dark:border-slate-600', 'text-slate-800', 'dark:text-slate-200');
-                banner.innerHTML = `⚖️ Beide Fahrzeuge verursachen exakt die gleichen jährlichen Kosten.`;
-            }
-        }
-        
-        // Initiale Berechnung beim Laden der Seite
-        calculate();
-    </script>
+  <!-- ============ VIEW 3: EINSTELLUNGEN ============ -->
+  <section id="view-settings" class="view hidden space-y-4">
+    <h1 class="text-xl font-semibold">Einstellungen</h1>
+    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-4">
+      <div>
+        <label for="set-price" class="text-sm text-slate-500 dark:text-slate-400">Strompreis in € pro kWh</label>
+        <input id="set-price" type="text" inputmode="decimal" placeholder="0,35"
+               class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      </div>
+      <div>
+        <label for="set-key" class="text-sm text-slate-500 dark:text-slate-400">App-PIN</label>
+        <input id="set-key" type="password" autocomplete="off" placeholder="PIN aus den Vercel-Variablen"
+               class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <p class="text-xs text-slate-500 mt-1">Schützt deinen Server-Endpunkt. Der OpenAI-Key liegt ausschließlich bei Vercel, nicht in dieser App.</p>
+      </div>
+      <button id="btn-save-settings" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Einstellungen speichern</button>
+      <p id="settings-msg" class="hidden text-sm text-emerald-700 dark:text-emerald-400">Gespeichert.</p>
+    </div>
+    <button id="btn-wipe" class="w-full py-3 rounded-2xl border border-red-500 text-red-600 dark:text-red-400 font-medium active:scale-95 transition">Alle Daten löschen</button>
+  </section>
+</main>
+
+<!-- ============ BOTTOM NAVIGATION ============ -->
+<nav class="fixed bottom-0 inset-x-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-t border-slate-200 dark:border-slate-800"
+     style="padding-bottom: env(safe-area-inset-bottom)">
+  <div class="max-w-xl mx-auto grid grid-cols-3">
+    <button data-view="dashboard" class="nav-btn py-3 flex flex-col items-center text-xs gap-1">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Dashboard</button>
+    <button data-view="capture" class="nav-btn py-3 flex flex-col items-center text-xs gap-1">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg>Erfassen</button>
+    <button data-view="settings" class="nav-btn py-3 flex flex-col items-center text-xs gap-1">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>Einstellungen</button>
+  </div>
+</nav>
+
+<script>
+/* =====================================================================
+   Konfiguration & Speicher
+   ===================================================================== */
+const KEY_READINGS = 'enyaq.readings';
+const KEY_SETTINGS = 'enyaq.settings';
+const PROXY_URL = '/api/read-meter';   // Vercel-Funktion; der Prompt und der OpenAI-Key liegen dort
+
+const $ = (id) => document.getElementById(id);
+const fmt = (n, d = 1) => Number(n).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
+const eur = (n) => Number(n).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+const parseNum = (s) => parseFloat(String(s).trim().replace(',', '.'));
+
+function load(key, fallback) {
+  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+  catch (e) { console.error('localStorage lesen fehlgeschlagen', e); return fallback; }
+}
+function save(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+  catch (e) { console.error('localStorage schreiben fehlgeschlagen', e); alert('Speichern im Browser nicht möglich (Speicher voll oder gesperrt).'); return false; }
+}
+const getReadings = () => load(KEY_READINGS, []);
+const getSettings = () => ({ price: 0.35, pin: '', ...load(KEY_SETTINGS, {}) });
+
+/* =====================================================================
+   Navigation
+   ===================================================================== */
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('hidden', v.id !== 'view-' + name));
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    const active = b.dataset.view === name;
+    b.classList.toggle('tab-active', active);
+    b.classList.toggle('text-slate-500', !active);
+  });
+  if (name === 'capture') startCamera(); else stopCamera();
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'settings') fillSettings();
+}
+document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
+
+/* =====================================================================
+   Kamera (MediaDevices API)
+   ===================================================================== */
+let stream = null;
+let photoDataUrl = null;
+const video = $('video'), snap = $('snapshot'), camMsg = $('cam-msg');
+
+function camNotice(text) { camMsg.textContent = text; camMsg.classList.toggle('hidden', !text); }
+
+async function startCamera() {
+  if (stream || photoDataUrl) return;
+  if (!navigator.mediaDevices?.getUserMedia) {
+    camNotice('Kamerazugriff nicht verfügbar. Der Browser erlaubt ihn nur über https:// oder localhost – nutze alternativ „Bild aus Kamera-App wählen“.');
+    return;
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    video.srcObject = stream; camNotice('');
+  } catch (err) {
+    console.error(err);
+    const denied = err.name === 'NotAllowedError';
+    camNotice(denied ? 'Kamerazugriff verweigert. Bitte im Browser freigeben oder „Bild aus Kamera-App wählen“ nutzen.'
+                     : 'Kamera konnte nicht gestartet werden (' + err.name + ').');
+  }
+}
+function stopCamera() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
+
+/** Zeichnet ein Bild-Quellobjekt skaliert (max. 1280 px) ins Canvas und speichert es als Base64-JPEG. */
+function setPhoto(source, w, h) {
+  const scale = Math.min(1, 1280 / Math.max(w, h));
+  snap.width = Math.round(w * scale); snap.height = Math.round(h * scale);
+  snap.getContext('2d').drawImage(source, 0, 0, snap.width, snap.height);
+  photoDataUrl = snap.toDataURL('image/jpeg', 0.85);
+  snap.classList.remove('hidden'); video.classList.add('hidden');
+  $('btn-ocr').disabled = false; $('ocr-error').classList.add('hidden');
+}
+
+$('btn-shot').addEventListener('click', () => {
+  if (!stream || !video.videoWidth) { camNotice('Keine Kamera aktiv.'); return; }
+  setPhoto(video, video.videoWidth, video.videoHeight);
+});
+$('btn-retake').addEventListener('click', () => {
+  photoDataUrl = null; snap.classList.add('hidden'); video.classList.remove('hidden');
+  $('btn-ocr').disabled = true; startCamera();
+});
+$('file-input').addEventListener('change', (e) => {      // Fallback, z. B. bei file:// ohne Kamerazugriff
+  const file = e.target.files[0]; if (!file) return;
+  const img = new Image();
+  img.onload = () => { setPhoto(img, img.naturalWidth, img.naturalHeight); URL.revokeObjectURL(img.src); camNotice(''); };
+  img.onerror = () => showOcrError('Bild konnte nicht geladen werden.');
+  img.src = URL.createObjectURL(file);
+});
+
+/* =====================================================================
+   KI-Auslesen (OpenAI gpt-4o Vision)
+   ===================================================================== */
+function showOcrError(msg) { const el = $('ocr-error'); el.textContent = msg; el.classList.remove('hidden'); }
+
+$('btn-ocr').addEventListener('click', async () => {
+  if (!photoDataUrl) return;
+  const pin = getSettings().pin;
+  if (!pin) { showOcrError('Bitte zuerst die App-PIN in den Einstellungen eintragen.'); return; }
+
+  $('ocr-error').classList.add('hidden');
+  $('btn-ocr').disabled = true; $('ocr-spinner').classList.remove('hidden'); $('ocr-label').textContent = 'Lese Zählerstand …';
+  try {
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-app-pin': pin },
+      body: JSON.stringify({ image: photoDataUrl })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401) throw new Error('PIN falsch.');
+    if (!res.ok) throw new Error(data.error?.message || data.error || ('HTTP ' + res.status));
+    const text = data.choices?.[0]?.message?.content || '';
+    const match = text.replace(',', '.').match(/\d+(\.\d+)?/);
+    if (!match) throw new Error('Keine Zahl erkannt (Antwort: „' + text.slice(0, 40) + '“). Bitte neues Foto aufnehmen oder manuell eingeben.');
+    $('reading-input').value = parseFloat(match[0]).toFixed(1);   // eine Nachkommastelle
+  } catch (err) {
+    console.error(err);
+    showOcrError('KI-Auslesen fehlgeschlagen: ' + err.message);
+  } finally {
+    $('ocr-spinner').classList.add('hidden'); $('ocr-label').textContent = 'Zählerstand per KI auslesen'; $('btn-ocr').disabled = false;
+  }
+});
+
+/* =====================================================================
+   Speichern eines Zählerstands
+   ===================================================================== */
+function flash(el, text, ok) {
+  el.textContent = text; el.className = 'text-sm ' + (ok ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400');
+  setTimeout(() => el.classList.add('hidden'), 4000);
+}
+
+$('btn-save').addEventListener('click', () => {
+  const value = Math.round(parseNum($('reading-input').value) * 10) / 10;
+  if (!isFinite(value) || value < 0) { flash($('save-msg'), 'Bitte einen gültigen Zählerstand eingeben.', false); return; }
+
+  const readings = getReadings();
+  const prev = readings[readings.length - 1];
+  if (prev && value < prev.totalReading &&
+      !confirm('Der Wert (' + fmt(value) + ') ist kleiner als der letzte Stand (' + fmt(prev.totalReading) + '). Trotzdem speichern?')) return;
+
+  const consumed = prev ? Math.max(0, Math.round((value - prev.totalReading) * 10) / 10) : 0;   // Differenz zum Vorgänger
+  const cost = consumed * getSettings().price;
+  readings.push({ id: Date.now(), date: new Date().toISOString(), totalReading: value, consumedSinceLast: consumed, cost });
+  if (!save(KEY_READINGS, readings)) return;
+
+  flash($('save-msg'), 'Gespeichert: ' + fmt(consumed) + ' kWh, ' + eur(cost), true);
+  $('save-msg').classList.remove('hidden');
+  $('reading-input').value = '';
+});
+
+/* =====================================================================
+   Einstellungen
+   ===================================================================== */
+function fillSettings() {
+  const s = getSettings();
+  $('set-price').value = String(s.price).replace('.', ',');
+  $('set-key').value = s.pin;
+}
+$('btn-save-settings').addEventListener('click', () => {
+  const price = parseNum($('set-price').value);
+  if (!isFinite(price) || price < 0) { alert('Bitte einen gültigen Strompreis eingeben (z. B. 0,35).'); return; }
+  if (save(KEY_SETTINGS, { price, pin: $('set-key').value.trim() })) {
+    $('settings-msg').classList.remove('hidden'); setTimeout(() => $('settings-msg').classList.add('hidden'), 2500);
+  }
+});
+$('btn-wipe').addEventListener('click', () => {
+  if (confirm('Wirklich ALLE Zählerstände und Einstellungen löschen? Das kann nicht rückgängig gemacht werden.')) {
+    localStorage.removeItem(KEY_READINGS); localStorage.removeItem(KEY_SETTINGS); fillSettings(); alert('Alle Daten wurden gelöscht.');
+  }
+});
+
+/* =====================================================================
+   Dashboard & Diagramme
+   ===================================================================== */
+let range = 'week', chart = null;
+const MONTHS = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+/** Erzeugt die Zeiträume (Buckets) für Woche (8), Monat (12) bzw. Jahr (ab erstem Eintrag). */
+function buildBuckets(kind, readings) {
+  const now = new Date(), out = [];
+  if (kind === 'week') {
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+    for (let i = 7; i >= 0; i--) {
+      const s = new Date(monday); s.setDate(s.getDate() - 7 * i);
+      const e = new Date(s); e.setDate(e.getDate() + 7);
+      out.push({ s, e, label: s.getDate() + '.' + (s.getMonth() + 1) + '.' });
+    }
+  } else if (kind === 'month') {
+    for (let i = 11; i >= 0; i--) {
+      const s = new Date(now.getFullYear(), now.getMonth() - i, 1), e = new Date(s.getFullYear(), s.getMonth() + 1, 1);
+      out.push({ s, e, label: MONTHS[s.getMonth()] + ' ' + String(s.getFullYear()).slice(2) });
+    }
+  } else {
+    const first = readings.length ? new Date(readings[0].date).getFullYear() : now.getFullYear();
+    for (let y = first; y <= now.getFullYear(); y++) out.push({ s: new Date(y, 0, 1), e: new Date(y + 1, 0, 1), label: String(y) });
+  }
+  return out.map(b => ({ ...b, kwh: 0, cost: 0 }));
+}
+
+function renderChart() {
+  const readings = getReadings();
+  const buckets = buildBuckets(range, readings);
+  readings.forEach(r => {                                  // Verbrauch dem Zeitraum des Ablesedatums zuordnen
+    const d = new Date(r.date), b = buckets.find(b => d >= b.s && d < b.e);
+    if (b) { b.kwh += r.consumedSinceLast; b.cost += r.cost; }
+  });
+  const hasData = buckets.some(b => b.kwh > 0);
+  $('chart-empty').classList.toggle('hidden', hasData);
+  $('chart').parentElement.classList.toggle('hidden', !hasData);
+  $('chart-title').textContent = { week: 'Verbrauch der letzten 8 Wochen (Wochenbeginn)', month: 'Verbrauch der letzten 12 Monate', year: 'Verbrauch pro Jahr' }[range];
+
+  document.querySelectorAll('.range-btn').forEach(b => {
+    const on = b.dataset.range === range;
+    b.classList.toggle('bg-white', on); b.classList.toggle('dark:bg-slate-700', on); b.classList.toggle('shadow-sm', on);
+  });
+  if (chart) chart.destroy();
+  if (!hasData) return;
+
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const text = dark ? '#cbd5e1' : '#475569', grid = dark ? 'rgba(148,163,184,.15)' : 'rgba(100,116,139,.15)';
+  chart = new Chart($('chart'), {
+    data: {
+      labels: buckets.map(b => b.label),
+      datasets: [
+        { type: 'bar',  label: 'kWh', data: buckets.map(b => +b.kwh.toFixed(1)), backgroundColor: '#10b981', borderRadius: 6, yAxisID: 'y' },
+        { type: 'line', label: '€',   data: buckets.map(b => +b.cost.toFixed(2)), borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: .3, yAxisID: 'y1' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: text } } },
+      scales: {
+        x:  { ticks: { color: text }, grid: { display: false } },
+        y:  { beginAtZero: true, title: { display: true, text: 'kWh', color: text }, ticks: { color: text }, grid: { color: grid } },
+        y1: { beginAtZero: true, position: 'right', title: { display: true, text: '€', color: text }, ticks: { color: text }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+}
+
+function renderDashboard() {
+  const readings = getReadings(), last = readings[readings.length - 1];
+  $('dash-reading').textContent = last ? fmt(last.totalReading).padStart(7, '0').replace(/^(0*)/, m => m) : '–';
+  $('dash-last-cost').textContent = last ? eur(last.cost) : '–';
+  $('dash-last-kwh').textContent = last ? fmt(last.consumedSinceLast) + ' kWh' : '–';
+  renderChart();
+}
+document.querySelectorAll('.range-btn').forEach(b => b.addEventListener('click', () => { range = b.dataset.range; renderChart(); }));
+
+showView('dashboard');
+</script>
 </body>
 </html>
