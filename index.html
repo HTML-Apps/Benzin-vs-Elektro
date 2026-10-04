@@ -57,6 +57,14 @@
     <h1 class="text-xl font-semibold">Zählerstand erfassen</h1>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3">
+      <label for="reading-input" class="text-sm text-slate-500 dark:text-slate-400">Zählerstand in kWh</label>
+      <input id="reading-input" type="text" inputmode="decimal" placeholder="z. B. 18.7"
+             class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 text-2xl lcd-input focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      <button id="btn-save" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Speichern</button>
+      <p id="save-msg" class="hidden text-sm"></p>
+    </div>
+
+    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3">
       <div class="relative rounded-2xl overflow-hidden bg-black aspect-[3/4]">
         <video id="video" class="w-full h-full object-cover" autoplay playsinline muted></video>
         <canvas id="snapshot" class="hidden w-full h-full object-cover absolute inset-0"></canvas>
@@ -76,14 +84,6 @@
         <span id="ocr-spinner" class="spinner hidden"></span><span id="ocr-label">Zählerstand per KI auslesen</span>
       </button>
       <p id="ocr-error" class="hidden text-sm text-red-600 dark:text-red-400"></p>
-    </div>
-
-    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3">
-      <label for="reading-input" class="text-sm text-slate-500 dark:text-slate-400">Zählerstand in kWh (bei Bedarf korrigieren)</label>
-      <input id="reading-input" type="text" inputmode="decimal" placeholder="z. B. 18.7"
-             class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 text-2xl lcd-input focus:outline-none focus:ring-2 focus:ring-emerald-500">
-      <button id="btn-save" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Speichern</button>
-      <p id="save-msg" class="hidden text-sm"></p>
     </div>
   </section>
 
