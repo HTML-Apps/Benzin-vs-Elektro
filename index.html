@@ -413,6 +413,7 @@ const toLocalInput = (iso) => {                       // ISO-Datum -> Wert für 
   const d = new Date(iso), p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
+const unitPriceOf = (r) => r.consumedSinceLast > 0 ? r.cost / r.consumedSinceLast : getSettings().price;
 const cell = (i, f) => $('history-list').querySelector(`li[data-idx="${i}"] [data-f="${f}"]`);
 
 function setEditMode(on) {
@@ -442,6 +443,10 @@ function renderHistory() {
           <div><p class="${lbl} mb-1">Neu</p><input data-f="new" type="text" inputmode="decimal" value="${r.totalReading.toFixed(1)}" class="${INPUT_CLS}"></div>
           <div><p class="${lbl} mb-1">Geladen</p><p data-f="diff" class="py-2 font-semibold text-emerald-700 dark:text-emerald-300">–</p></div>
         </div>
+        <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <span class="text-sm text-slate-500 dark:text-slate-400">Kosten</span>
+          <span data-f="cost" class="text-lg font-semibold">–</span>
+        </div>
       </li>`;
     }
 
@@ -458,6 +463,10 @@ function renderHistory() {
         <div class="rounded-xl bg-emerald-50 dark:bg-emerald-950/50 py-1"><p class="${lbl}">Geladen</p>
           <p class="font-semibold text-emerald-700 dark:text-emerald-300">${oldVal === null ? '–' : fmt(r.consumedSinceLast) + ' kWh'}</p></div>
       </div>
+      <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+        <span class="text-sm text-slate-500 dark:text-slate-400">Kosten${oldVal !== null && r.consumedSinceLast > 0 ? ` <span class="text-xs">(${fmt(unitPriceOf(r), 2)} €/kWh)</span>` : ''}</span>
+        <span class="text-lg font-semibold">${oldVal === null ? '–' : eur(r.cost)}</span>
+      </div>
     </li>`;
   }).reverse().join('');                                // neueste zuerst
   if (editMode) updateDiffs();
@@ -465,10 +474,12 @@ function renderHistory() {
 
 /** Berechnet im Bearbeitungsmodus live die geladenen kWh aus den Eingabefeldern. */
 function updateDiffs() {
-  const n = getReadings().length;
-  for (let i = 0; i < n; i++) {
+  const stored = getReadings();
+  for (let i = 0; i < stored.length; i++) {
     const neu = parseNum(cell(i, 'new').value), old = i > 0 ? parseNum(cell(i - 1, 'new').value) : NaN;
-    cell(i, 'diff').textContent = (i > 0 && isFinite(neu) && isFinite(old)) ? fmt(Math.max(0, neu - old)) + ' kWh' : '–';
+    const ok = i > 0 && isFinite(neu) && isFinite(old), kwh = ok ? Math.max(0, neu - old) : 0;
+    cell(i, 'diff').textContent = ok ? fmt(kwh) + ' kWh' : '–';
+    cell(i, 'cost').textContent = ok ? eur(kwh * unitPriceOf(stored[i])) : '–';
   }
 }
 
