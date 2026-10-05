@@ -5,7 +5,7 @@
  * - Die KI-Abfrage (/api/…) wird NIE gecacht und läuft immer übers Netz.
  * Bei größeren Änderungen am Cache-Konzept CACHE_VERSION erhöhen. */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = 'enyaq-' + CACHE_VERSION;
 
 // Dateien, die beim Installieren vorab geladen werden
@@ -44,6 +44,9 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;                              // POST (KI-Abfrage) nie anfassen
   if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) return;
   if (!/^https?:$/.test(url.protocol)) return;
+  // Fremde Hosts nur für die bekannten Skript-CDNs cachen – Firestore/Auth (Streaming, Login-Iframe/Popup) niemals anfassen
+  const CDN_HOSTS = ['cdn.tailwindcss.com', 'cdn.jsdelivr.net', 'www.gstatic.com'];
+  if (url.origin !== self.location.origin && !CDN_HOSTS.includes(url.hostname)) return;
 
   // Seitenaufrufe: Network first, offline -> gecachte index.html
   if (req.mode === 'navigate') {
