@@ -221,8 +221,12 @@ const getReadings = () => load(KEY_READINGS, []);
 function commitReadings(next) {
   const prev = getReadings();
   if (!save(KEY_READINGS, next)) return false;
-  window.cloud?.push(prev, next).catch(e => { console.error(e); window.onCloudStatus?.({ error: e.message }); });
-  return true;
+  if (!window.cloud?.isSignedIn()) return Promise.resolve('local');             // nicht angemeldet -> nur lokal gespeichert
+  return window.cloud.push(prev, next).then(() => 'cloud').catch(e => {          // Promise = true; liefert 'cloud' | 'local' | 'error:<Meldung>'
+    console.error('Firestore-Schreibfehler', e);
+    window.onCloudStatus?.({ error: e.code || e.message });
+    return 'error:' + (e.code || e.message);
+  });
 }
 const getSettings = () => ({ price: 0.35, pin: '', ...load(KEY_SETTINGS, {}) });
 
@@ -351,10 +355,16 @@ $('btn-save').addEventListener('click', () => {
   const consumed = prev ? Math.max(0, Math.round((value - prev.totalReading) * 10) / 10) : 0;   // Differenz zum Vorgänger
   const cost = consumed * getSettings().price;
   readings.push({ id: Date.now(), date: new Date().toISOString(), totalReading: value, consumedSinceLast: consumed, cost });
-  if (!commitReadings(readings)) return;
+  const status = commitReadings(readings);
+  if (!status) return;
   stopLive(false);                                       // echter Wert erfasst -> Simulation beenden
 
-  flash($('save-msg'), 'Gespeichert: ' + fmt(consumed) + ' kWh, ' + eur(cost), true);
+  const msg = 'Gespeichert: ' + fmt(consumed) + ' kWh, ' + eur(cost);
+  flash($('save-msg'), msg + (window.cloud?.isSignedIn() ? ' · Cloud: wird übertragen …' : ' · nur lokal (nicht bei Google angemeldet)'), true);
+  status.then(s => {                                     // Ergebnis der Cloud-Übertragung sichtbar machen
+    if (s === 'cloud') flash($('save-msg'), msg + ' · Cloud ✓', true);
+    else if (s.startsWith('error:')) flash($('save-msg'), msg + ' · Cloud-Fehler: ' + s.slice(6), false);
+  });
   $('save-msg').classList.remove('hidden');
   $('reading-input').value = '';
 });
