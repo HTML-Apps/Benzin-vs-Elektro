@@ -62,7 +62,7 @@
       </div>
       <div class="grid grid-cols-2 gap-3 mt-4">
         <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3 flex flex-col justify-between">
-          <p id="dash-last-label" class="text-xs text-slate-500 dark:text-slate-400">Ladung</p>
+          <p id="dash-last-label" class="text-xs text-slate-500 dark:text-slate-400">Letzte Ladung</p>
           <p id="dash-last-cost" class="text-2xl font-semibold text-emerald-700 dark:text-emerald-300">–</p>
         </div>
         <div class="rounded-2xl bg-sky-50 dark:bg-sky-950/50 p-3 flex flex-col justify-between">
@@ -93,6 +93,16 @@
       <p id="stat-value" class="text-6xl font-semibold text-center text-emerald-600 dark:text-emerald-400 my-2">–</p>
       <p id="stat-note" class="text-xs text-slate-500 dark:text-slate-400 text-center"></p>
     </div>
+
+    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4">
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Verbrauch &amp; Effizienz (Ø)</p>
+      <div class="grid grid-cols-3 gap-2 text-center">
+        <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">kWh/100 km</p><p id="eff-kwh" class="text-xl font-semibold text-emerald-700 dark:text-emerald-300">–</p></div>
+        <div class="rounded-2xl bg-sky-50 dark:bg-sky-950/50 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">€/100 km</p><p id="eff-cost" class="text-xl font-semibold text-sky-700 dark:text-sky-300">–</p></div>
+        <div class="rounded-2xl bg-amber-50 dark:bg-amber-950/40 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">Ladeverlust</p><p id="eff-loss" class="text-xl font-semibold text-amber-700 dark:text-amber-300">–</p></div>
+      </div>
+      <p id="eff-note" class="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center"></p>
+    </div>
   </section>
 
   <!-- ============ VIEW 2: ERFASSEN ============ -->
@@ -103,6 +113,11 @@
       <label for="reading-input" class="text-sm text-slate-500 dark:text-slate-400">Zählerstand in kWh</label>
       <input id="reading-input" type="text" inputmode="decimal" placeholder="z. B. 18.7"
              class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 text-2xl lcd-input focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      <div class="grid grid-cols-3 gap-2">
+        <div><label for="km-input" class="text-xs text-slate-500 dark:text-slate-400">km-Stand</label><input id="km-input" type="text" inputmode="decimal" placeholder="optional" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        <div><label for="soc0-input" class="text-xs text-slate-500 dark:text-slate-400">Akku Start %</label><input id="soc0-input" type="text" inputmode="decimal" placeholder="optional" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        <div><label for="soc1-input" class="text-xs text-slate-500 dark:text-slate-400">Akku Ende %</label><input id="soc1-input" type="text" inputmode="decimal" placeholder="optional" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+      </div>
       <button id="btn-save" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Speichern</button>
       <p id="save-msg" class="hidden text-sm"></p>
     </div>
@@ -152,6 +167,12 @@
         <label for="set-price" class="text-sm text-slate-500 dark:text-slate-400">Strompreis in € pro kWh</label>
         <input id="set-price" type="text" inputmode="decimal" placeholder="0,307"
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      </div>
+      <div>
+        <label for="set-battery" class="text-sm text-slate-500 dark:text-slate-400">Nettokapazität der Batterie in kWh</label>
+        <input id="set-battery" type="text" inputmode="decimal" placeholder="52"
+               class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <p class="text-xs text-slate-500 mt-1">Grundlage für die Ladeverlust-Berechnung. Rückwirkend wirksam, da die Werte immer neu berechnet werden.</p>
       </div>
       <div>
         <label for="set-key" class="text-sm text-slate-500 dark:text-slate-400">App-PIN</label>
@@ -217,6 +238,31 @@ function save(key, value) {
   catch (e) { console.error('localStorage schreiben fehlgeschlagen', e); alert('Speichern im Browser nicht möglich (Speicher voll oder gesperrt).'); return false; }
 }
 const getReadings = () => load(KEY_READINGS, []);
+const DEFAULT_BATTERY_KWH = 52;   // Standardwert (nutzbare Kapazität Enyaq iV 50); einstellbar unter Einstellungen
+const batteryKwh = () => { const v = Number(getSettings().battery); return v > 0 ? v : DEFAULT_BATTERY_KWH; };
+/** Vorbelegung: letzter bekannter km-Stand als grauer Hinweis (Platzhalter), Akku Ende standardmäßig 80 %. */
+function updateCaptureDefaults() {
+  const withKm = getReadings().filter(r => r.odometerKm != null), last = withKm[withKm.length - 1];
+  $('km-input').placeholder = last ? String(last.odometerKm) : 'optional';
+  if ($('soc1-input').value === '') $('soc1-input').value = '80';
+}
+const optNum = (s) => String(s).trim() === '' ? null : parseNum(s);      // leer -> null, ungültig -> NaN
+
+/** Kennzahlen eines Eintrags: Verbrauch/100 km (kWh seit der Vorgänger-Ladung / gefahrene km), gespeicherte Energie und Ladeverlust. */
+function entryStats(rs, i) {
+  const r = rs[i], prev = i > 0 ? rs[i - 1] : null, s = {};
+  if (prev && r.odometerKm != null && prev.odometerKm != null && r.odometerKm > prev.odometerKm && r.consumedSinceLast > 0) {
+    s.km = r.odometerKm - prev.odometerKm;
+    s.kwh100 = r.consumedSinceLast / s.km * 100;
+    s.cost100 = r.cost / s.km * 100;
+  }
+  if (r.socStart != null && r.socEnd != null && r.socEnd > r.socStart && r.consumedSinceLast > 0) {
+    s.stored = (r.socEnd - r.socStart) / 100 * batteryKwh();            // tatsächlich in der Batterie angekommene Energie
+    s.loss = (1 - s.stored / r.consumedSinceLast) * 100;                    // Ladeverlust in %
+  }
+  return s;
+}
+
 /** Einziger Schreibweg für Zählerstände: lokaler Cache (localStorage) + Firestore (falls angemeldet, nur Änderungen). */
 function commitReadings(next) {
   const prev = getReadings();
@@ -240,7 +286,7 @@ function showView(name) {
     b.classList.toggle('tab-active', active);
     b.classList.toggle('text-slate-500', !active);
   });
-  if (name === 'capture') startCamera(); else stopCamera();
+  if (name === 'capture') { startCamera(); updateCaptureDefaults(); } else stopCamera();
   if (name === 'dashboard') renderDashboard();
   if (name === 'settings') fillSettings();
   if (name !== 'history' && editMode) setEditMode(false);
@@ -354,7 +400,15 @@ $('btn-save').addEventListener('click', () => {
 
   const consumed = prev ? Math.max(0, Math.round((value - prev.totalReading) * 10) / 10) : 0;   // Differenz zum Vorgänger
   const cost = consumed * getSettings().price;
-  readings.push({ id: Date.now(), date: new Date().toISOString(), totalReading: value, consumedSinceLast: consumed, cost });
+  const km = optNum($('km-input').value), s0 = optNum($('soc0-input').value), s1 = optNum($('soc1-input').value);
+  if ([km, s0, s1].some(Number.isNaN) || (km != null && km < 0) || [s0, s1].some(v => v != null && (v < 0 || v > 100)) || (s0 != null && s1 != null && s1 <= s0)) {
+    flash($('save-msg'), 'Bitte km-Stand und Akku-Prozente prüfen (0–100 %, Ende größer als Start).', false); return;
+  }
+  const entry = { id: Date.now(), date: new Date().toISOString(), totalReading: value, consumedSinceLast: consumed, cost };
+  if (km != null) entry.odometerKm = km;                // optionale Felder nur setzen, wenn vorhanden (Firestore verbietet undefined)
+  if (s0 != null) entry.socStart = s0;
+  if (s1 != null) entry.socEnd = s1;
+  readings.push(entry);
   const status = commitReadings(readings);
   if (!status) return;
   stopLive(false);                                       // echter Wert erfasst -> Simulation beenden
@@ -366,7 +420,7 @@ $('btn-save').addEventListener('click', () => {
     else if (s.startsWith('error:')) flash($('save-msg'), msg + ' · Cloud-Fehler: ' + s.slice(6), false);
   });
   $('save-msg').classList.remove('hidden');
-  $('reading-input').value = '';
+  $('reading-input').value = ''; ['km-input', 'soc0-input', 'soc1-input'].forEach(id => $(id).value = ''); updateCaptureDefaults();
 });
 
 /* =====================================================================
@@ -376,11 +430,14 @@ function fillSettings() {
   const s = getSettings();
   $('set-price').value = String(s.price).replace('.', ',');
   $('set-key').value = s.pin;
+  $('set-battery').value = String(batteryKwh()).replace('.', ',');
 }
 $('btn-save-settings').addEventListener('click', () => {
   const price = parseNum($('set-price').value);
   if (!isFinite(price) || price < 0) { alert('Bitte einen gültigen Strompreis eingeben (z. B. 0,307).'); return; }
-  if (save(KEY_SETTINGS, { price, pin: $('set-key').value.trim() })) {
+  const battery = parseNum($('set-battery').value);
+  if (!isFinite(battery) || battery < 10 || battery > 200) { alert('Bitte eine gültige Nettokapazität in kWh eingeben (z. B. 52).'); return; }
+  if (save(KEY_SETTINGS, { price, battery, pin: $('set-key').value.trim() })) {
     $('settings-msg').classList.remove('hidden'); setTimeout(() => $('settings-msg').classList.add('hidden'), 2500);
   }
 });
@@ -489,7 +546,7 @@ function renderLive() {
   $('dash-reading').textContent = (live.baseReading + kwh).toFixed(1).padStart(8, '0');
   $('dash-last-cost').textContent = eur(kwh * live.price);                           // Kosten = kWh x Preis
   $('dash-last-kwh').textContent = fmt(kwh, 2) + ' kWh';
-  $('dash-last-label').textContent = 'Ladung (' + fmtDate(live.startedAt) + ')';          // Live: Startdatum der laufenden Ladung
+  $('dash-last-label').textContent = 'Letzte Ladung (' + fmtDate(live.startedAt) + ')';          // Live: Startdatum der laufenden Ladung
 
   const s = Math.floor(elapsedMs / 1000), start = new Date(live.startedAt);
   $('live-info').textContent = 'Start ' + pad2(start.getHours()) + ':' + pad2(start.getMinutes()) + ' Uhr · Dauer ' +
@@ -549,15 +606,31 @@ function renderStats() {
 }
 document.querySelectorAll('.stat-btn').forEach(b => b.addEventListener('click', () => { statRange = b.dataset.stat; renderStats(); }));
 
+function renderEfficiency() {                            // gewichteter Durchschnitt über alle Einträge mit den nötigen Daten
+  const rs = getReadings();
+  let km = 0, kwh = 0, cost = 0, chg = 0, stored = 0, nKm = 0, nSoc = 0;
+  rs.forEach((r, i) => {
+    const s = entryStats(rs, i);
+    if (s.km) { km += s.km; kwh += r.consumedSinceLast; cost += r.cost; nKm++; }
+    if (s.stored !== undefined) { chg += r.consumedSinceLast; stored += s.stored; nSoc++; }
+  });
+  $('eff-kwh').textContent = km ? fmt(kwh / km * 100, 1) : '–';
+  $('eff-cost').textContent = km ? eur(cost / km * 100) : '–';
+  $('eff-loss').textContent = chg ? fmt(Math.max(0, (1 - stored / chg) * 100), 0) + ' %' : '–';
+  $('eff-note').textContent = (nKm || nSoc) ? 'Basis: ' + nKm + ' Ladungen mit km-Stand, ' + nSoc + ' mit Akku-Stand (Kapazität ' + batteryKwh() + ' kWh)'
+                                              : 'Erfasse km-Stand und Akku-% bei den Ladungen, um Werte zu sehen.';
+}
+
 function renderDashboard() {
   const readings = getReadings(), last = readings[readings.length - 1];
   $('dash-reading').textContent = (last ? last.totalReading : 0).toFixed(1).padStart(8, '0');   // 6 Stellen + Komma + 1 Nachkommastelle
   $('dash-last-cost').textContent = last ? eur(last.cost) : '–';
   $('dash-last-kwh').textContent = last ? fmt(last.consumedSinceLast) + ' kWh' : '–';
-  $('dash-last-label').textContent = last ? 'Ladung (' + fmtDate(last.date) + ')' : 'Letzte Ladung';
+  $('dash-last-label').textContent = last ? 'Letzte Ladung (' + fmtDate(last.date) + ')' : 'Letzte Ladung';
   renderLive();                                          // überschreibt die Werte, falls der Live-Modus läuft
   renderChart();
   renderStats();
+  renderEfficiency();
 }
 document.querySelectorAll('.range-btn').forEach(b => b.addEventListener('click', () => { range = b.dataset.range; renderChart(); }));
 
@@ -596,6 +669,12 @@ function renderHistory() {
     const d = new Date(r.date);
     const oldVal = i > 0 ? readings[i - 1].totalReading : null;      // alter Stand = Wert des Vorgängers
 
+    const st = entryStats(readings, i);
+    const row = (k, v) => `<div class="flex justify-between items-baseline mt-2"><span class="text-sm text-slate-500 dark:text-slate-400">${k}</span><span class="font-medium text-right">${v}</span></div>`;
+    const extra = (r.odometerKm != null ? row('Kilometerstand', fmt(r.odometerKm, 0) + ' km' + (st.km ? ' <span class="text-xs text-slate-500">(+' + fmt(st.km, 0) + ' km)</span>' : '')) : '') +
+      (r.socStart != null && r.socEnd != null ? row('Ladestand', r.socStart + ' % → ' + r.socEnd + ' %' + (st.loss != null && st.loss >= 0 && st.loss < 60 ? ' <span class="text-xs text-slate-500">(Verlust ≈ ' + fmt(st.loss, 0) + ' %)</span>' : '')) : '') +
+      (st.kwh100 ? row('Verbrauch', fmt(st.kwh100, 1) + ' kWh/100 km · ' + eur(st.cost100) + '/100 km') : '');
+
     if (editMode) {
       return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4 ring-2 ring-emerald-500/40">
         <input type="datetime-local" data-f="date" value="${toLocalInput(r.date)}" class="${INPUT_CLS}">
@@ -613,6 +692,12 @@ function renderHistory() {
           <span class="text-sm text-slate-500 dark:text-slate-400">Ladedauer</span>
           <span data-f="dur" class="text-lg font-semibold">–</span>
         </div>
+        <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+          <div><p class="text-xs text-slate-500 dark:text-slate-400 mb-1">km-Stand</p><input data-f="km" type="text" inputmode="decimal" value="${r.odometerKm ?? ''}" class="${INPUT_CLS}"></div>
+          <div><p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Akku Start %</p><input data-f="s0" type="text" inputmode="decimal" value="${r.socStart ?? ''}" class="${INPUT_CLS}"></div>
+          <div><p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Akku Ende %</p><input data-f="s1" type="text" inputmode="decimal" value="${r.socEnd ?? ''}" class="${INPUT_CLS}"></div>
+        </div>
+        <button data-f="delbtn" data-del="0" class="mt-3 w-full py-2 rounded-xl border border-red-500 text-red-600 dark:text-red-400 text-sm font-medium">Eintrag löschen</button>
       </li>`;
     }
 
@@ -636,7 +721,7 @@ function renderHistory() {
       <div class="flex justify-between items-baseline mt-2">
         <span class="text-sm text-slate-500 dark:text-slate-400">Ladedauer <span class="text-xs">(bei ${CHARGE_POWER_KW} kW)</span></span>
         <span class="text-lg font-semibold">${oldVal === null ? '–' : fmtDuration(r.consumedSinceLast) + ' h'}</span>
-      </div>
+      </div>${extra}
     </li>`;
   }).reverse().join('');                                // neueste zuerst
   if (editMode) updateDiffs();
@@ -663,14 +748,28 @@ $('history-list').addEventListener('input', (e) => {
   updateDiffs();
 });
 
+$('history-list').addEventListener('click', (e) => {      // "Eintrag löschen" markiert nur; gelöscht wird erst beim Speichern
+  if (e.target.dataset.f !== 'delbtn') return;
+  const on = e.target.dataset.del !== '1', li = e.target.closest('li');
+  e.target.dataset.del = on ? '1' : '0';
+  e.target.textContent = on ? 'Löschen zurücknehmen' : 'Eintrag löschen';
+  li.classList.toggle('opacity-50', on); li.classList.toggle('ring-red-500', on);
+});
 $('btn-edit').addEventListener('click', () => setEditMode(true));
 $('btn-edit-cancel').addEventListener('click', () => setEditMode(false));
 $('btn-edit-save').addEventListener('click', () => {
   const stored = getReadings(), currentPrice = getSettings().price;
-  const items = stored.map((r, i) => ({
-    r, date: new Date(cell(i, 'date').value), neu: Math.round(parseNum(cell(i, 'new').value) * 10) / 10
+  const all = stored.map((r, i) => ({
+    r, date: new Date(cell(i, 'date').value), neu: Math.round(parseNum(cell(i, 'new').value) * 10) / 10,
+    km: optNum(cell(i, 'km').value), s0: optNum(cell(i, 's0').value), s1: optNum(cell(i, 's1').value), del: cell(i, 'delbtn').dataset.del === '1'
   }));
-  if (items.some(x => isNaN(x.date) || !isFinite(x.neu) || x.neu < 0)) { alert('Bitte gültige Datums- und Zählerstandswerte eingeben.'); return; }
+  if (all.some(x => isNaN(x.date) || !isFinite(x.neu) || x.neu < 0)) { alert('Bitte gültige Datums- und Zählerstandswerte eingeben.'); return; }
+  if (all.some(x => [x.km, x.s0, x.s1].some(Number.isNaN) || (x.km != null && x.km < 0) || [x.s0, x.s1].some(v => v != null && (v < 0 || v > 100)) || (x.s0 != null && x.s1 != null && x.s1 <= x.s0))) {
+    alert('Bitte km-Stand und Akku-Prozente prüfen (0–100 %, Ende größer als Start).'); return;
+  }
+  const gone = all.filter(x => x.del).length;
+  if (gone && !confirm(gone + (gone === 1 ? ' Eintrag wird' : ' Einträge werden') + ' gelöscht (auch in der Cloud). Fortfahren?')) return;
+  const items = all.filter(x => !x.del);
 
   items.sort((a, b) => a.date - b.date);                 // chronologisch, falls Datum geändert wurde
   if (items.some((x, i) => i > 0 && x.neu < items[i - 1].neu) &&
@@ -680,7 +779,11 @@ $('btn-edit-save').addEventListener('click', () => {
     // Preis pro kWh des Eintrags beibehalten (aus den gespeicherten Werten), sonst aktueller Preis
     const unitPrice = x.r.consumedSinceLast > 0 ? x.r.cost / x.r.consumedSinceLast : currentPrice;
     const consumed = i > 0 ? Math.max(0, Math.round((x.neu - items[i - 1].neu) * 10) / 10) : 0;
-    return { id: x.r.id, date: x.date.toISOString(), totalReading: x.neu, consumedSinceLast: consumed, cost: consumed * unitPrice };
+    const out = { id: x.r.id, date: x.date.toISOString(), totalReading: x.neu, consumedSinceLast: consumed, cost: consumed * unitPrice };
+    if (x.km != null) out.odometerKm = x.km;
+    if (x.s0 != null) out.socStart = x.s0;
+    if (x.s1 != null) out.socEnd = x.s1;
+    return out;
   });
   if (commitReadings(result)) { deferredCloud = null; setEditMode(false); }
 });
@@ -741,7 +844,13 @@ function parseImport(text) {
     let id = Number(r.id);
     if (!Number.isFinite(id) || seen.has(id)) id = Date.now() + i;      // IDs eindeutig halten
     seen.add(id);
-    return { id, date: date.toISOString(), totalReading: r.totalReading, consumedSinceLast: r.consumedSinceLast, cost: r.cost };
+    const out = { id, date: date.toISOString(), totalReading: r.totalReading, consumedSinceLast: r.consumedSinceLast, cost: r.cost };
+    for (const k of ['odometerKm', 'socStart', 'socEnd']) {            // optionale Felder prüfen und übernehmen
+      if (r[k] === undefined || r[k] === null) continue;
+      if (typeof r[k] !== 'number' || !isFinite(r[k]) || r[k] < 0 || (k !== 'odometerKm' && r[k] > 100)) throw new Error('Feld ' + k + ' in Eintrag ' + (i + 1) + ' ist ungültig.');
+      out[k] = r[k];
+    }
+    return out;
   }).sort((a, b) => new Date(a.date) - new Date(b.date));
 }
 
@@ -752,11 +861,13 @@ $('import-file').addEventListener('change', async (e) => {
   if (!file) return;
   try {
     const imported = parseImport(await file.text());
-    const current = getReadings().length;
-    if (current > 0 && !confirm(imported.length + ' Einträge gefunden. Die aktuell gespeicherten ' + current + ' Einträge werden dadurch ERSETZT. Fortfahren?')) return;
-    if (!commitReadings(imported)) return;
+    const current = getReadings();
+    const fresh = imported.filter(i => !current.some(c => sameId(c, i)));          // nur wirklich neue Einträge
+    const merged = current.filter(c => !imported.some(i => sameId(c, i))).concat(imported).sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (current.length > 0 && !confirm(imported.length + ' Einträge in der Datei, davon ' + fresh.length + ' neu. Mit den ' + current.length + ' vorhandenen zusammenführen?')) return;
+    if (!commitReadings(merged)) return;                 // Zusammenführen (gleiche ID: Datei gewinnt); wird bei Anmeldung auch in die Cloud geschrieben
     stopLive(false);                                     // Live-Basis wäre veraltet
-    flash($('io-msg'), imported.length + ' Einträge importiert.', true);
+    flash($('io-msg'), fresh.length + ' neue Einträge importiert (gesamt ' + merged.length + ').', true);
   } catch (err) {
     flash($('io-msg'), 'Import fehlgeschlagen: ' + err.message, false);
   }
@@ -781,8 +892,10 @@ window.onCloudReadings = (cloud, isFirst) => {
   cloud = cloud.sort((a, b) => new Date(a.date) - new Date(b.date));
   if (isFirst) {                                         // beim ersten Abgleich: lokale Einträge, die in der Cloud fehlen
     const missing = getReadings().filter(r => !cloud.some(c => sameId(c, r)));
-    if (missing.length && confirm(missing.length + ' lokale Einträge sind noch nicht in der Cloud. Jetzt hochladen?\n(Abbrechen verwirft sie auf diesem Gerät – vorher ggf. exportieren.)')) {
-      window.cloud.push([], missing).catch(console.error);
+    if (missing.length) {                                // automatisch hochladen und lokal behalten – es geht nichts verloren
+      window.cloud.push([], missing)
+        .then(() => window.onCloudStatus({ email: cloudEmail, note: missing.length + ' lokale Einträge in die Cloud übertragen' }))
+        .catch(e => window.onCloudStatus({ error: 'Upload fehlgeschlagen: ' + (e.code || e.message) }));
       cloud = cloud.concat(missing).sort((a, b) => new Date(a.date) - new Date(b.date));
     }
   }
@@ -791,9 +904,9 @@ window.onCloudReadings = (cloud, isFirst) => {
 
 window.onCloudStatus = (s) => {
   const el = $('cloud-status'), btn = $('btn-cloud');
-  cloudEmail = s?.email || null;
+  if (!s?.error) cloudEmail = s?.email || null;
   if (s?.error) { el.textContent = 'Fehler: ' + s.error; el.className = 'text-sm text-red-600 dark:text-red-400'; }
-  else if (cloudEmail) { el.textContent = 'Angemeldet als ' + cloudEmail + ' – Synchronisation aktiv.'; el.className = 'text-sm text-emerald-700 dark:text-emerald-400'; }
+  else if (cloudEmail) { el.textContent = 'Angemeldet als ' + cloudEmail + ' – Synchronisation aktiv.' + (s?.note ? ' ' + s.note + '.' : ''); el.className = 'text-sm text-emerald-700 dark:text-emerald-400'; }
   else { el.textContent = 'Nicht angemeldet – Daten nur auf diesem Gerät.'; el.className = 'text-sm text-slate-500 dark:text-slate-400'; }
   btn.textContent = cloudEmail ? 'Abmelden' : 'Mit Google anmelden';
 };
@@ -827,7 +940,7 @@ const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });   // Offline-Queue
 let user = null, unsub = null;
 const col = () => collection(db, 'enyaqStrom', user.uid, 'readings');
-const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost].join('|');
+const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost, r.odometerKm, r.socStart, r.socEnd].join('|');
 
 window.cloud = {
   isSignedIn: () => !!user,
