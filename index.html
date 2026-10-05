@@ -489,7 +489,7 @@ function renderLive() {
   $('dash-reading').textContent = (live.baseReading + kwh).toFixed(1).padStart(8, '0');
   $('dash-last-cost').textContent = eur(kwh * live.price);                           // Kosten = kWh x Preis
   $('dash-last-kwh').textContent = fmt(kwh, 2) + ' kWh';
-  $('dash-last-label').textContent = 'Letzte Ladung (' + fmtDate(live.startedAt) + ')';          // Live: Startdatum der laufenden Ladung
+  $('dash-last-label').textContent = 'Ladung (' + fmtDate(live.startedAt) + ')';          // Live: Startdatum der laufenden Ladung
 
   const s = Math.floor(elapsedMs / 1000), start = new Date(live.startedAt);
   $('live-info').textContent = 'Start ' + pad2(start.getHours()) + ':' + pad2(start.getMinutes()) + ' Uhr · Dauer ' +
@@ -554,7 +554,7 @@ function renderDashboard() {
   $('dash-reading').textContent = (last ? last.totalReading : 0).toFixed(1).padStart(8, '0');   // 6 Stellen + Komma + 1 Nachkommastelle
   $('dash-last-cost').textContent = last ? eur(last.cost) : '–';
   $('dash-last-kwh').textContent = last ? fmt(last.consumedSinceLast) + ' kWh' : '–';
-  $('dash-last-label').textContent = last ? 'Letzte Ladung (' + fmtDate(last.date) + ')' : 'Letzte Ladung';
+  $('dash-last-label').textContent = last ? 'Ladung (' + fmtDate(last.date) + ')' : 'Letzte Ladung';
   renderLive();                                          // überschreibt die Werte, falls der Live-Modus läuft
   renderChart();
   renderStats();
