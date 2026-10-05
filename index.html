@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class="bg-black">
 <head>
 <meta charset="UTF-8">
+<meta name="theme-color" content="#000000">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Enyaq Ladekosten</title>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -33,7 +34,7 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
-<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen">
+<body class="bg-black text-slate-100 min-h-screen">
 
 <main class="max-w-xl mx-auto px-4 pt-5 pb-28">
 
@@ -41,7 +42,7 @@
   <section id="view-dashboard" class="view space-y-4">
     <h1 class="text-xl font-semibold">Skoda Enyaq | Ladekosten NK</h1>
 
-    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4">
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <div class="flex items-center justify-between mb-2">
         <p id="dash-title" class="text-sm text-slate-500 dark:text-slate-400">Aktueller Zählerstand</p>
         <button id="btn-live" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-slate-200 dark:bg-slate-800 transition active:scale-95">
@@ -81,7 +82,7 @@
       </div>
       <div class="grid grid-cols-2 gap-3 mt-4">
         <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3 flex flex-col justify-between">
-          <p id="dash-last-label" class="text-xs text-slate-500 dark:text-slate-400">Letzte Ladung</p>
+          <p id="dash-last-label" class="text-xs text-slate-500 dark:text-slate-400">Kosten</p>
           <p id="dash-last-cost" class="text-2xl font-semibold text-emerald-700 dark:text-emerald-300">–</p>
         </div>
         <div class="rounded-2xl bg-sky-50 dark:bg-sky-950/50 p-3 flex flex-col justify-between">
@@ -91,7 +92,7 @@
       </div>
     </div>
 
-    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4">
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mb-3" id="range-switch">
         <button data-range="week"  class="range-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Woche</button>
         <button data-range="month" class="range-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Monat</button>
@@ -102,7 +103,7 @@
       <p id="chart-empty" class="hidden text-center text-sm text-slate-500 py-6">Noch keine Daten. Erfasse mindestens zwei Zählerstände.</p>
     </div>
 
-    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4">
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mb-4">
         <button data-stat="week"  class="stat-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Woche</button>
         <button data-stat="month" class="stat-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Monat</button>
@@ -113,7 +114,7 @@
       <p id="stat-note" class="text-xs text-slate-500 dark:text-slate-400 text-center"></p>
     </div>
 
-    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4">
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Verbrauch &amp; Effizienz (Ø)</p>
       <div class="grid grid-cols-3 gap-2 text-center">
         <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">kWh/100 km</p><p id="eff-kwh" class="text-xl font-semibold text-emerald-700 dark:text-emerald-300">–</p></div>
@@ -128,7 +129,7 @@
   <section id="view-capture" class="view hidden space-y-4">
     <h1 class="text-xl font-semibold">Zählerstand erfassen</h1>
 
-    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3">
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 space-y-3">
       <label for="reading-input" class="text-sm text-slate-500 dark:text-slate-400">Zählerstand in kWh</label>
       <input id="reading-input" type="text" inputmode="decimal" placeholder="z. B. 18.7"
              class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 text-2xl lcd-input focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -141,7 +142,7 @@
       <p id="save-msg" class="hidden text-sm"></p>
     </div>
 
-    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3">
+    <div id="scan-card" class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 space-y-3">
       <div class="relative rounded-2xl overflow-hidden bg-black aspect-[3/4]">
         <video id="video" class="w-full h-full object-cover" autoplay playsinline muted></video>
         <canvas id="snapshot" class="hidden w-full h-full object-cover absolute inset-0"></canvas>
@@ -181,7 +182,7 @@
   <!-- ============ VIEW 3: EINSTELLUNGEN ============ -->
   <section id="view-settings" class="view hidden space-y-4">
     <h1 class="text-xl font-semibold">Einstellungen</h1>
-    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-4">
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 space-y-4">
       <div>
         <label for="set-price" class="text-sm text-slate-500 dark:text-slate-400">Strompreis in € pro kWh</label>
         <input id="set-price" type="text" inputmode="decimal" placeholder="0,307"
@@ -202,7 +203,7 @@
       <button id="btn-save-settings" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Einstellungen speichern</button>
       <p id="settings-msg" class="hidden text-sm text-emerald-700 dark:text-emerald-400">Gespeichert.</p>
     </div>
-    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3">
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 space-y-3">
       <p class="text-sm text-slate-500 dark:text-slate-400">Datensicherung (Zählerstände)</p>
       <div class="grid grid-cols-2 gap-2">
         <button id="btn-export" class="py-3 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white font-medium active:scale-95 transition">Daten exportieren</button>
@@ -211,7 +212,7 @@
       <input id="import-file" type="file" accept=".json,application/json" class="hidden">
       <p id="io-msg" class="hidden text-sm"></p>
     </div>
-    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3">
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 space-y-3">
       <p class="text-sm text-slate-500 dark:text-slate-400">Cloud-Sync (Firestore)</p>
       <p id="cloud-status" class="text-sm">Wird geladen …</p>
       <button id="btn-cloud" class="w-full py-3 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white font-medium active:scale-95 transition">Mit Google anmelden</button>
@@ -239,6 +240,8 @@
 /* =====================================================================
    Konfiguration & Speicher
    ===================================================================== */
+/* KI-Zählererkennung (Kamera + OpenAI): false = Karte unsichtbar, Kamera startet nicht. Zum Aktivieren auf true setzen. */
+const ENABLE_AI_SCAN = false;
 const KEY_READINGS = 'enyaq.readings';
 const KEY_SETTINGS = 'enyaq.settings';
 const PROXY_URL = '/api/read-meter';   // Vercel-Funktion; der Prompt und der OpenAI-Key liegen dort
@@ -312,7 +315,7 @@ function showView(name) {
     b.classList.toggle('tab-active', active);
     b.classList.toggle('text-slate-500', !active);
   });
-  if (name === 'capture') { startCamera(); updateCaptureDefaults(); } else stopCamera();
+  if (name === 'capture') { if (ENABLE_AI_SCAN) startCamera(); updateCaptureDefaults(); } else stopCamera();
   if (name === 'dashboard') renderDashboard();
   if (name === 'settings') fillSettings();
   if (name !== 'history' && editMode) setEditMode(false);
@@ -594,7 +597,7 @@ function renderLive() {
   $('dash-reading').textContent = (live.baseReading + kwh).toFixed(1).padStart(8, '0');
   $('dash-last-cost').textContent = eur(kwh * live.price);                                       // Kosten = kWh x Preis
   $('dash-last-kwh').textContent = fmt(kwh, 2) + ' kWh';
-  $('dash-last-label').textContent = 'Letzte Ladung (' + fmtDate(live.startedAt) + ')';
+  $('dash-last-label').textContent = 'Kosten (' + fmtDate(live.startedAt) + ')';
   $('live-info').textContent = 'Start ' + hhmm(live.startedAt) + ' Uhr · Dauer ' + fmtHM(elapsedMs / 1000) + ':' + pad2(Math.floor(elapsedMs / 1000) % 60);
 
   if (hasT) {                                                                                    // Akku-Balken
@@ -698,7 +701,7 @@ function renderDashboard() {
   $('dash-reading').textContent = (last ? last.totalReading : 0).toFixed(1).padStart(8, '0');   // 6 Stellen + Komma + 1 Nachkommastelle
   $('dash-last-cost').textContent = last ? eur(last.cost) : '–';
   $('dash-last-kwh').textContent = last ? fmt(last.consumedSinceLast) + ' kWh' : '–';
-  $('dash-last-label').textContent = last ? 'Letzte Ladung (' + fmtDate(last.date) + ')' : 'Letzte Ladung';
+  $('dash-last-label').textContent = last ? 'Kosten (' + fmtDate(last.date) + ')' : 'Kosten';
   renderLive();                                          // überschreibt die Werte, falls der Live-Modus läuft
   renderChart();
   renderStats();
@@ -748,7 +751,7 @@ function renderHistory() {
       (st.kwh100 ? row('Verbrauch', fmt(st.kwh100, 1) + ' kWh/100 km · ' + eur(st.cost100) + '/100 km') : '');
 
     if (editMode) {
-      return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4 ring-2 ring-emerald-500/40">
+      return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 ring-2 ring-emerald-500/40">
         <input type="datetime-local" data-f="date" value="${toLocalInput(r.date)}" class="${INPUT_CLS}">
         <div class="grid grid-cols-3 gap-2 mt-3 text-center">
           <div><p class="${lbl} mb-1">Alt</p>${oldVal === null ? '<p class="py-2">–</p>'
@@ -775,7 +778,7 @@ function renderHistory() {
 
     const date = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
                  ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
-    return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4">
+    return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <div class="flex justify-between items-baseline">
         <span class="font-semibold">${WEEKDAYS[d.getDay()]}</span>
         <span class="text-sm text-slate-500 dark:text-slate-400">${date}</span>
@@ -995,6 +998,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 }
 
 if (getLive()) tickLive();                              // Live-Modus nach Neuladen fortsetzen
+$('scan-card').classList.toggle('hidden', !ENABLE_AI_SCAN);
 showView('dashboard');
 </script>
 <script type="module">
