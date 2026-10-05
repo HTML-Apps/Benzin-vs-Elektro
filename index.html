@@ -51,7 +51,7 @@
       </div>
       <div id="live-setup" class="hidden mb-3 rounded-2xl bg-slate-100 dark:bg-slate-800 p-3">
         <div class="grid grid-cols-2 gap-2">
-          <div><label for="live-soc0" class="text-xs text-slate-500 dark:text-slate-400">Akku jetzt %</label><input id="live-soc0" type="text" inputmode="decimal" placeholder="z. B. 25" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+          <div><label for="live-soc0" class="text-xs text-slate-500 dark:text-slate-400">Akku Start %</label><input id="live-soc0" type="text" inputmode="decimal" placeholder="z. B. 25" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
           <div><label for="live-soc1" class="text-xs text-slate-500 dark:text-slate-400">Ziel %</label><input id="live-soc1" type="text" inputmode="decimal" value="80" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
         </div>
         <p id="live-forecast" class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center min-h-[1rem]"></p>
@@ -605,7 +605,7 @@ function renderLive() {
     $('batt-fill').style.width = soc + '%'; $('batt-target').style.left = live.socTarget + '%';
     $('batt-text').textContent = Math.floor(soc) + ' %';
     $('batt-note').textContent = done ? 'Ziel ' + live.socTarget + ' % erreicht um ' + hhmm(finishAt) + ' Uhr'
-      : 'Ziel ' + live.socTarget + ' % · fertig ca. ' + hhmm(finishAt) + ' Uhr · noch ' + fmtHM(Math.max(0, (finishAt - Date.now()) / 1000)) + ' h · ca. ' + eur(live.kwhTarget * live.price);
+      : 'Ziel ' + live.socTarget + ' % · Ende ca. ' + hhmm(finishAt) + ' Uhr · noch ' + fmtHM(Math.max(0, (finishAt - Date.now()) / 1000)) + ' h · ca. ' + eur(live.kwhTarget * live.price);
   }
 }
 
