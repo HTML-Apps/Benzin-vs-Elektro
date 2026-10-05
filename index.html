@@ -61,11 +61,11 @@
         </div>
       </div>
       <div class="grid grid-cols-2 gap-3 mt-4">
-        <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3">
-          <p class="text-xs text-slate-500 dark:text-slate-400">Letzte Ladung</p>
+        <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3 flex flex-col justify-between">
+          <p id="dash-last-label" class="text-xs text-slate-500 dark:text-slate-400">Letzte Ladung</p>
           <p id="dash-last-cost" class="text-2xl font-semibold text-emerald-700 dark:text-emerald-300">–</p>
         </div>
-        <div class="rounded-2xl bg-sky-50 dark:bg-sky-950/50 p-3">
+        <div class="rounded-2xl bg-sky-50 dark:bg-sky-950/50 p-3 flex flex-col justify-between">
           <p class="text-xs text-slate-500 dark:text-slate-400">Geladen</p>
           <p id="dash-last-kwh" class="text-2xl font-semibold text-sky-700 dark:text-sky-300">–</p>
         </div>
@@ -171,6 +171,11 @@
       <input id="import-file" type="file" accept=".json,application/json" class="hidden">
       <p id="io-msg" class="hidden text-sm"></p>
     </div>
+    <div class="rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3">
+      <p class="text-sm text-slate-500 dark:text-slate-400">Cloud-Sync (Firestore)</p>
+      <p id="cloud-status" class="text-sm">Wird geladen …</p>
+      <button id="btn-cloud" class="w-full py-3 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white font-medium active:scale-95 transition">Mit Google anmelden</button>
+    </div>
     <button id="btn-wipe" class="w-full py-3 rounded-2xl border border-red-500 text-red-600 dark:text-red-400 font-medium active:scale-95 transition">Alle Daten löschen</button>
   </section>
 </main>
@@ -212,6 +217,13 @@ function save(key, value) {
   catch (e) { console.error('localStorage schreiben fehlgeschlagen', e); alert('Speichern im Browser nicht möglich (Speicher voll oder gesperrt).'); return false; }
 }
 const getReadings = () => load(KEY_READINGS, []);
+/** Einziger Schreibweg für Zählerstände: lokaler Cache (localStorage) + Firestore (falls angemeldet, nur Änderungen). */
+function commitReadings(next) {
+  const prev = getReadings();
+  if (!save(KEY_READINGS, next)) return false;
+  window.cloud?.push(prev, next).catch(e => { console.error(e); window.onCloudStatus?.({ error: e.message }); });
+  return true;
+}
 const getSettings = () => ({ price: 0.35, pin: '', ...load(KEY_SETTINGS, {}) });
 
 /* =====================================================================
@@ -339,7 +351,7 @@ $('btn-save').addEventListener('click', () => {
   const consumed = prev ? Math.max(0, Math.round((value - prev.totalReading) * 10) / 10) : 0;   // Differenz zum Vorgänger
   const cost = consumed * getSettings().price;
   readings.push({ id: Date.now(), date: new Date().toISOString(), totalReading: value, consumedSinceLast: consumed, cost });
-  if (!save(KEY_READINGS, readings)) return;
+  if (!commitReadings(readings)) return;
   stopLive(false);                                       // echter Wert erfasst -> Simulation beenden
 
   flash($('save-msg'), 'Gespeichert: ' + fmt(consumed) + ' kWh, ' + eur(cost), true);
@@ -363,8 +375,8 @@ $('btn-save-settings').addEventListener('click', () => {
   }
 });
 $('btn-wipe').addEventListener('click', () => {
-  if (confirm('Wirklich ALLE Zählerstände und Einstellungen löschen? Das kann nicht rückgängig gemacht werden.')) {
-    localStorage.removeItem(KEY_READINGS); localStorage.removeItem(KEY_SETTINGS); fillSettings(); alert('Alle Daten wurden gelöscht.');
+  if (confirm('Wirklich ALLE Zählerstände und Einstellungen löschen?' + (window.cloud?.isSignedIn() ? ' Auch die Daten in der Cloud werden gelöscht.' : '') + ' Das kann nicht rückgängig gemacht werden.')) {
+    commitReadings([]); localStorage.removeItem(KEY_SETTINGS); fillSettings(); alert('Alle Daten wurden gelöscht.');
   }
 });
 
@@ -448,6 +460,7 @@ const KEY_LIVE = 'enyaq.live';
 let liveTimer = null;
 
 const getLive = () => load(KEY_LIVE, null);
+const fmtDate = (iso) => new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });   // 04.10.2026
 const pad2 = (n) => String(n).padStart(2, '0');
 
 function renderLive() {
@@ -466,6 +479,7 @@ function renderLive() {
   $('dash-reading').textContent = (live.baseReading + kwh).toFixed(1).padStart(8, '0');
   $('dash-last-cost').textContent = eur(kwh * live.price);                           // Kosten = kWh x Preis
   $('dash-last-kwh').textContent = fmt(kwh, 2) + ' kWh';
+  $('dash-last-label').textContent = 'Letzte Ladung (' + fmtDate(live.startedAt) + ')';          // Live: Startdatum der laufenden Ladung
 
   const s = Math.floor(elapsedMs / 1000), start = new Date(live.startedAt);
   $('live-info').textContent = 'Start ' + pad2(start.getHours()) + ':' + pad2(start.getMinutes()) + ' Uhr · Dauer ' +
@@ -530,6 +544,7 @@ function renderDashboard() {
   $('dash-reading').textContent = (last ? last.totalReading : 0).toFixed(1).padStart(8, '0');   // 6 Stellen + Komma + 1 Nachkommastelle
   $('dash-last-cost').textContent = last ? eur(last.cost) : '–';
   $('dash-last-kwh').textContent = last ? fmt(last.consumedSinceLast) + ' kWh' : '–';
+  $('dash-last-label').textContent = last ? 'Letzte Ladung (' + fmtDate(last.date) + ')' : 'Letzte Ladung';
   renderLive();                                          // überschreibt die Werte, falls der Live-Modus läuft
   renderChart();
   renderStats();
@@ -554,6 +569,7 @@ const cell = (i, f) => $('history-list').querySelector(`li[data-idx="${i}"] [dat
 
 function setEditMode(on) {
   editMode = on;
+  if (!on && deferredCloud) { applyCloud(deferredCloud); deferredCloud = null; }   // während des Bearbeitens eingegangene Cloud-Daten jetzt übernehmen
   $('btn-edit').classList.toggle('hidden', on);
   $('btn-edit-cancel').classList.toggle('hidden', !on);
   $('btn-edit-save').classList.toggle('hidden', !on);
@@ -656,7 +672,7 @@ $('btn-edit-save').addEventListener('click', () => {
     const consumed = i > 0 ? Math.max(0, Math.round((x.neu - items[i - 1].neu) * 10) / 10) : 0;
     return { id: x.r.id, date: x.date.toISOString(), totalReading: x.neu, consumedSinceLast: consumed, cost: consumed * unitPrice };
   });
-  if (save(KEY_READINGS, result)) setEditMode(false);
+  if (commitReadings(result)) { deferredCloud = null; setEditMode(false); }
 });
 
 /* =====================================================================
@@ -728,13 +744,55 @@ $('import-file').addEventListener('change', async (e) => {
     const imported = parseImport(await file.text());
     const current = getReadings().length;
     if (current > 0 && !confirm(imported.length + ' Einträge gefunden. Die aktuell gespeicherten ' + current + ' Einträge werden dadurch ERSETZT. Fortfahren?')) return;
-    if (!save(KEY_READINGS, imported)) return;
+    if (!commitReadings(imported)) return;
     stopLive(false);                                     // Live-Basis wäre veraltet
     flash($('io-msg'), imported.length + ' Einträge importiert.', true);
   } catch (err) {
     flash($('io-msg'), 'Import fehlgeschlagen: ' + err.message, false);
   }
 });
+
+/* =====================================================================
+   Cloud-Sync: Firestore ist die Quelle der Wahrheit, localStorage der schnelle Cache (auch offline).
+   Pfad: enyaqStrom/{uid}/readings/{id}. Einstellungen/PIN und Live-Daten bleiben bewusst lokal.
+   Das Firebase-Modul unten ruft diese beiden Funktionen auf.
+   ===================================================================== */
+let deferredCloud = null, cloudEmail = null;
+
+function applyCloud(list) { save(KEY_READINGS, list); refreshViews(); }
+function refreshViews() {
+  const v = [...document.querySelectorAll('.view')].find(el => !el.classList.contains('hidden'));
+  if (v?.id === 'view-dashboard') renderDashboard();
+  if (v?.id === 'view-history') renderHistory();
+}
+const sameId = (a, b) => String(a.id) === String(b.id);
+
+window.onCloudReadings = (cloud, isFirst) => {
+  cloud = cloud.sort((a, b) => new Date(a.date) - new Date(b.date));
+  if (isFirst) {                                         // beim ersten Abgleich: lokale Einträge, die in der Cloud fehlen
+    const missing = getReadings().filter(r => !cloud.some(c => sameId(c, r)));
+    if (missing.length && confirm(missing.length + ' lokale Einträge sind noch nicht in der Cloud. Jetzt hochladen?\n(Abbrechen verwirft sie auf diesem Gerät – vorher ggf. exportieren.)')) {
+      window.cloud.push([], missing).catch(console.error);
+      cloud = cloud.concat(missing).sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+  }
+  if (editMode) deferredCloud = cloud; else applyCloud(cloud);
+};
+
+window.onCloudStatus = (s) => {
+  const el = $('cloud-status'), btn = $('btn-cloud');
+  cloudEmail = s?.email || null;
+  if (s?.error) { el.textContent = 'Fehler: ' + s.error; el.className = 'text-sm text-red-600 dark:text-red-400'; }
+  else if (cloudEmail) { el.textContent = 'Angemeldet als ' + cloudEmail + ' – Synchronisation aktiv.'; el.className = 'text-sm text-emerald-700 dark:text-emerald-400'; }
+  else { el.textContent = 'Nicht angemeldet – Daten nur auf diesem Gerät.'; el.className = 'text-sm text-slate-500 dark:text-slate-400'; }
+  btn.textContent = cloudEmail ? 'Abmelden' : 'Mit Google anmelden';
+};
+$('btn-cloud').addEventListener('click', async () => {
+  if (!window.cloud) { alert('Firebase konnte nicht geladen werden (offline?).'); return; }
+  try { cloudEmail ? await window.cloud.logout() : await window.cloud.login(); }
+  catch (e) { window.onCloudStatus({ error: e.code || e.message }); }
+});
+setTimeout(() => { if (!window.cloud) $('cloud-status').textContent = 'Cloud-Sync nicht verfügbar (Firebase nicht geladen).'; }, 4000);
 
 /* Service Worker registrieren (funktioniert nur über https:// oder localhost, nicht über file://) */
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
@@ -743,6 +801,51 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 
 if (getLive()) tickLive();                              // Live-Modus nach Neuladen fortsetzen
 showView('dashboard');
+</script>
+<script type="module">
+/* Firebase (modular SDK). Die Konfiguration ist kein Geheimnis – geschützt wird über Auth + Firestore-Regeln. */
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, onSnapshot, writeBatch } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+const app = initializeApp({
+  apiKey: "AIzaSyDM_1SM3ueFYhAB7zkHO8SG5VVOCsMu_0c", authDomain: "daily-companion-24975.firebaseapp.com",
+  projectId: "daily-companion-24975", storageBucket: "daily-companion-24975.firebasestorage.app",
+  messagingSenderId: "330854991329", appId: "1:330854991329:web:2d8a4060f8bd50372d3ea0"
+});
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });   // Offline-Queue
+let user = null, unsub = null;
+const col = () => collection(db, 'enyaqStrom', user.uid, 'readings');
+const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost].join('|');
+
+window.cloud = {
+  isSignedIn: () => !!user,
+  login: () => signInWithPopup(auth, new GoogleAuthProvider()),
+  logout: () => signOut(auth),
+  /** Schreibt nur die Unterschiede zwischen prev und next (neu/geändert -> set, entfernt -> delete). */
+  async push(prev, next) {
+    if (!user) return;
+    const old = new Map(prev.map(r => [String(r.id), sig(r)])), keep = new Set(next.map(r => String(r.id)));
+    const ops = next.filter(r => old.get(String(r.id)) !== sig(r)).map(r => ['set', r])
+      .concat(prev.filter(r => !keep.has(String(r.id))).map(r => ['del', r]));
+    for (let i = 0; i < ops.length; i += 400) {            // Batch-Limit 500
+      const b = writeBatch(db);
+      ops.slice(i, i + 400).forEach(([t, r]) => t === 'set' ? b.set(doc(col(), String(r.id)), r) : b.delete(doc(col(), String(r.id))));
+      await b.commit();
+    }
+  }
+};
+
+onAuthStateChanged(auth, (u) => {
+  user = u; if (unsub) { unsub(); unsub = null; }
+  window.onCloudStatus?.(u ? { email: u.email || u.displayName || 'Konto' } : null);
+  if (!u) return;
+  let first = true;
+  unsub = onSnapshot(col(), (snap) => {
+    window.onCloudReadings(snap.docs.map(d => d.data()), first); first = false;
+  }, (err) => window.onCloudStatus?.({ error: err.code === 'permission-denied' ? 'Keine Berechtigung (Firestore-Regel für enyaqStrom fehlt?)' : err.message }));
+});
 </script>
 </body>
 </html>
