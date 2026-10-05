@@ -41,6 +41,7 @@
   <!-- ============ VIEW 1: DASHBOARD ============ -->
   <section id="view-dashboard" class="view space-y-4">
     <h1 class="text-xl font-semibold">Skoda Enyaq | Ladekosten NK</h1>
+    <div id="key-warn" class="hidden rounded-2xl p-3 text-sm"></div>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <div class="flex items-center justify-between mb-2">
@@ -51,10 +52,11 @@
       </div>
       <div id="live-setup" class="hidden mb-3 rounded-2xl bg-slate-100 dark:bg-slate-800 p-3">
         <div class="grid grid-cols-2 gap-2">
-          <div><label for="live-soc0" class="text-xs text-slate-500 dark:text-slate-400">Akku Start %</label><input id="live-soc0" type="text" inputmode="decimal" placeholder="z. B. 25" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+          <div><label for="live-soc0" class="text-xs text-slate-500 dark:text-slate-400">Akku jetzt %</label><input id="live-soc0" type="text" inputmode="decimal" placeholder="z. B. 25" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
           <div><label for="live-soc1" class="text-xs text-slate-500 dark:text-slate-400">Ziel %</label><input id="live-soc1" type="text" inputmode="decimal" value="80" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
         </div>
         <p id="live-forecast" class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center min-h-[1rem]"></p>
+        <p id="live-car-note" class="text-xs text-slate-500 dark:text-slate-400 mt-1 text-center"></p>
         <div class="grid grid-cols-2 gap-2 mt-2">
           <button id="live-cancel" class="py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-sm font-medium">Abbrechen</button>
           <button id="live-go" class="py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold">Live starten</button>
@@ -86,7 +88,7 @@
           <p id="dash-last-cost" class="text-2xl font-semibold text-emerald-700 dark:text-emerald-300">–</p>
         </div>
         <div class="rounded-2xl bg-sky-50 dark:bg-sky-950/50 p-3 flex flex-col justify-between">
-          <p class="text-xs text-slate-500 dark:text-slate-400">Letzte Ladung</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Geladen</p>
           <p id="dash-last-kwh" class="text-2xl font-semibold text-sky-700 dark:text-sky-300">–</p>
         </div>
       </div>
@@ -200,6 +202,12 @@
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
         <p class="text-xs text-slate-500 mt-1">Schützt deinen Server-Endpunkt. Der OpenAI-Key liegt ausschließlich bei Vercel, nicht in dieser App.</p>
       </div>
+      <div>
+        <label for="set-keyexp" class="text-sm text-slate-500 dark:text-slate-400">Škoda-API-Schlüssel gültig bis</label>
+        <input id="set-keyexp" type="date"
+               class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <p class="text-xs text-slate-500 mt-1">Die App erinnert 30 Tage vor Ablauf. Nach einem neuen Schlüssel: in Vercel ersetzen, neu deployen und hier das Datum anpassen (wird bei Live-Abrufen sonst automatisch übernommen).</p>
+      </div>
       <button id="btn-save-settings" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Einstellungen speichern</button>
       <p id="settings-msg" class="hidden text-sm text-emerald-700 dark:text-emerald-400">Gespeichert.</p>
     </div>
@@ -271,7 +279,8 @@ function updateCaptureDefaults() {
   if (live?.kwhTarget != null) {
     const kwh = liveKwh(live);
     if ($('soc0-input').value === '') $('soc0-input').value = live.socStart;
-    if (['', '80'].includes($('soc1-input').value)) $('soc1-input').value = Math.floor(live.socStart + kwh * live.eff / live.battery * 100);
+    if (['', '80'].includes($('soc1-input').value)) $('soc1-input').value = kwh >= live.kwhTarget ? live.socTarget : Math.floor(live.socStart + kwh * live.eff / live.battery * 100);   // fertig = Ziel-%
+    if (live.odometerKm != null && $('km-input').value === '') $('km-input').value = Math.round(live.odometerKm);                              // km-Stand beim Live-Start
     if ($('reading-input').value === '') $('reading-input').value = (live.baseReading + kwh).toFixed(1);
   }
 }
@@ -302,6 +311,18 @@ function commitReadings(next) {
     window.onCloudStatus?.({ error: e.code || e.message });
     return 'error:' + (e.code || e.message);
   });
+}
+const DEFAULT_KEY_EXPIRY = '2027-04-03';                       // Ablauf des Škoda-API-Schlüssels (änderbar in den Einstellungen)
+const keyExpiry = () => getSettings().keyExpiry || DEFAULT_KEY_EXPIRY;
+function renderKeyWarning() {                                   // Erinnerung ab 30 Tagen vor Ablauf, danach dauerhaft bis zur Erneuerung
+  const el = $('key-warn'), end = new Date(keyExpiry() + 'T23:59:59');
+  const days = Math.ceil((end - Date.now()) / 86400000), date = end.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  el.classList.toggle('hidden', !(days <= 30));
+  if (days > 30) return;
+  const urgent = days <= 7;
+  el.className = 'rounded-2xl p-3 text-sm ' + (urgent ? 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200' : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200');
+  el.textContent = (days < 0 ? 'Der Škoda-API-Schlüssel ist seit ' + date + ' abgelaufen.' : days === 0 ? 'Der Škoda-API-Schlüssel läuft heute ab (' + date + ').' : 'Der Škoda-API-Schlüssel läuft in ' + days + (days === 1 ? ' Tag' : ' Tagen') + ' ab (' + date + ').')
+    + ' Neuen Schlüssel in der MyŠkoda-App erzeugen, in Vercel (SKODA_API_KEY) ersetzen, neu deployen und das Datum in den Einstellungen anpassen.';
 }
 const getSettings = () => ({ price: 0.35, pin: '', ...load(KEY_SETTINGS, {}) });
 
@@ -460,13 +481,14 @@ function fillSettings() {
   $('set-price').value = String(s.price).replace('.', ',');
   $('set-key').value = s.pin;
   $('set-battery').value = String(batteryKwh()).replace('.', ',');
+  $('set-keyexp').value = keyExpiry();
 }
 $('btn-save-settings').addEventListener('click', () => {
   const price = parseNum($('set-price').value);
   if (!isFinite(price) || price < 0) { alert('Bitte einen gültigen Strompreis eingeben (z. B. 0,307).'); return; }
   const battery = parseNum($('set-battery').value);
   if (!isFinite(battery) || battery < 10 || battery > 200) { alert('Bitte eine gültige Nettokapazität in kWh eingeben (z. B. 52).'); return; }
-  if (save(KEY_SETTINGS, { price, battery, pin: $('set-key').value.trim() })) {
+  if (save(KEY_SETTINGS, { price, battery, keyExpiry: $('set-keyexp').value || DEFAULT_KEY_EXPIRY, pin: $('set-key').value.trim() })) {
     $('settings-msg').classList.remove('hidden'); setTimeout(() => $('settings-msg').classList.add('hidden'), 2500);
   }
 });
@@ -605,16 +627,16 @@ function renderLive() {
     $('batt-fill').style.width = soc + '%'; $('batt-target').style.left = live.socTarget + '%';
     $('batt-text').textContent = Math.floor(soc) + ' %';
     $('batt-note').textContent = done ? 'Ziel ' + live.socTarget + ' % erreicht um ' + hhmm(finishAt) + ' Uhr'
-      : 'Ziel ' + live.socTarget + ' % · Ende ca. ' + hhmm(finishAt) + ' Uhr · noch ' + fmtHM(Math.max(0, (finishAt - Date.now()) / 1000)) + ' h · ca. ' + eur(live.kwhTarget * live.price);
+      : 'Ziel ' + live.socTarget + ' % · fertig ca. ' + hhmm(finishAt) + ' Uhr · noch ' + fmtHM(Math.max(0, (finishAt - Date.now()) / 1000)) + ' h · ca. ' + eur(live.kwhTarget * live.price);
   }
 }
 
 function tickLive() { renderLive(); if (!liveTimer) liveTimer = setInterval(renderLive, 1000); }
 
-function startLive(socStart, socTarget) {
+function startLive(socStart, socTarget, odometerKm = null) {
   const readings = getReadings(), last = readings[readings.length - 1], f = liveForecast(socStart, socTarget);
   const state = { startedAt: Date.now(), baseReading: last ? last.totalReading : 0, price: getSettings().price,
-                  socStart, socTarget, kwhTarget: f.kwh, eff: f.eff, battery: batteryKwh() };       // alles Nötige beim Start einfrieren
+                  socStart, socTarget, odometerKm, kwhTarget: f.kwh, eff: f.eff, battery: batteryKwh() };       // alles Nötige beim Start einfrieren
   if (save(KEY_LIVE, state)) { $('live-setup').classList.add('hidden'); tickLive(); }
 }
 function stopLive(refresh = true) {
@@ -629,15 +651,39 @@ function updateLiveForecast() {
   $('live-forecast').textContent = !liveValid(v) ? '' : (f => 'ca. ' + fmtHM(f.hours * 3600) + ' h · ' + fmt(f.kwh, 1) + ' kWh · ca. ' + eur(f.cost) +
     ' (Wirkungsgrad ' + Math.round(f.eff * 100) + ' % ' + (f.hist ? 'aus Historie' : '– Standardwert') + ')')(liveForecast(v[0], v[1]));
 }
+/** Holt Akku-%, Ziel-% und km-Stand über die Vercel-Funktion /api/vehicle vom Škoda-Server und füllt das Live-Panel. */
+let carData = null;
+async function loadFromCar() {
+  const note = $('live-car-note'), pin = getSettings().pin;
+  carData = null;
+  if (!pin) { note.textContent = 'Fahrzeugdaten: bitte zuerst die PIN in den Einstellungen eintragen.'; return; }
+  note.textContent = 'Lade Fahrzeugdaten …';
+  try {
+    const res = await fetch('/api/vehicle', { headers: { 'x-app-pin': pin } });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
+    carData = d;
+    const ex = d.keyExpiresAt ? new Date(d.keyExpiresAt) : null;                   // Ablaufdatum aus der Škoda-Antwort übernehmen
+    if (ex && !isNaN(ex) && ex.toISOString().slice(0, 10) !== keyExpiry()) save(KEY_SETTINGS, { ...getSettings(), keyExpiry: ex.toISOString().slice(0, 10) });
+    if (d.soc != null) $('live-soc0').value = Math.round(d.soc);
+    if (d.targetSoc != null) $('live-soc1').value = Math.round(d.targetSoc);
+    updateLiveForecast();
+    note.textContent = d.soc == null && d.targetSoc == null ? 'Das Auto hat keine Ladedaten gemeldet – bitte manuell eingeben.'
+      : 'Vom Auto: Akku ' + (d.soc ?? '?') + ' %, Ziel ' + (d.targetSoc ?? '?') + ' %' + (d.capturedAt ? ' (Stand ' + hhmm(new Date(d.capturedAt).getTime()) + ' Uhr)' : '');
+  } catch (e) {
+    note.textContent = 'Fahrzeugdaten nicht verfügbar (' + e.message + ') – bitte manuell eingeben.';
+  }
+}
 $('btn-live').addEventListener('click', () => {
   if (getLive()) return stopLive();
-  const panel = $('live-setup'); panel.classList.toggle('hidden'); updateLiveForecast();        // erst Start-/Ziel-% abfragen
+  const panel = $('live-setup'); panel.classList.toggle('hidden'); updateLiveForecast();
+  if (!panel.classList.contains('hidden')) loadFromCar();        // erst Start-/Ziel-% abfragen
 });
 $('live-cancel').addEventListener('click', () => $('live-setup').classList.add('hidden'));
 $('live-go').addEventListener('click', () => {
   const v = liveInputs();
   if (!liveValid(v)) { $('live-forecast').textContent = 'Bitte Start- und Ziel-% prüfen (0–100, Ziel größer als Start).'; return; }
-  startLive(v[0], v[1]);
+  startLive(v[0], v[1], carData?.odometerKm ?? null);
 });
 ['live-soc0', 'live-soc1'].forEach(id => $(id).addEventListener('input', updateLiveForecast));
 document.addEventListener('visibilitychange', () => { if (!document.hidden && getLive()) renderLive(); });
@@ -706,6 +752,7 @@ function renderDashboard() {
   renderChart();
   renderStats();
   renderEfficiency();
+  renderKeyWarning();
 }
 document.querySelectorAll('.range-btn').forEach(b => b.addEventListener('click', () => { range = b.dataset.range; renderChart(); }));
 
