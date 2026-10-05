@@ -48,6 +48,17 @@
           <span id="live-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>Live
         </button>
       </div>
+      <div id="live-setup" class="hidden mb-3 rounded-2xl bg-slate-100 dark:bg-slate-800 p-3">
+        <div class="grid grid-cols-2 gap-2">
+          <div><label for="live-soc0" class="text-xs text-slate-500 dark:text-slate-400">Akku jetzt %</label><input id="live-soc0" type="text" inputmode="decimal" placeholder="z. B. 25" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+          <div><label for="live-soc1" class="text-xs text-slate-500 dark:text-slate-400">Ziel %</label><input id="live-soc1" type="text" inputmode="decimal" value="80" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        </div>
+        <p id="live-forecast" class="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center min-h-[1rem]"></p>
+        <div class="grid grid-cols-2 gap-2 mt-2">
+          <button id="live-cancel" class="py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-sm font-medium">Abbrechen</button>
+          <button id="live-go" class="py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold">Live starten</button>
+        </div>
+      </div>
       <div id="seg-box" class="lcd rounded-xl px-3 py-4 flex items-end justify-end gap-2">
         <span id="seg-wrap" class="seg-wrap seg"><span class="seg-ghost">888888.8</span><span id="dash-reading" class="seg-on">000000.0</span></span>
         <span id="seg-unit" class="text-sm pb-1">kWh</span>
@@ -59,6 +70,14 @@
           <span class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"><span class="phase-led l2"></span>L2</span>
           <span class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"><span class="phase-led l3"></span>L3</span>
         </div>
+      </div>
+      <div id="live-battery" class="hidden mt-3">
+        <div class="relative h-7 rounded-lg bg-slate-200 dark:bg-slate-800 overflow-hidden">
+          <div id="batt-fill" class="absolute inset-y-0 left-0 bg-emerald-500 transition-all duration-1000" style="width:0%"></div>
+          <div id="batt-target" class="absolute inset-y-0 w-0.5 bg-slate-900/60 dark:bg-white/70" style="left:80%"></div>
+          <span id="batt-text" class="absolute inset-0 flex items-center justify-center text-sm font-semibold text-slate-900 dark:text-white"></span>
+        </div>
+        <p id="batt-note" class="text-xs text-slate-500 dark:text-slate-400 mt-1 text-center"></p>
       </div>
       <div class="grid grid-cols-2 gap-3 mt-4">
         <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3 flex flex-col justify-between">
@@ -245,6 +264,13 @@ function updateCaptureDefaults() {
   const withKm = getReadings().filter(r => r.odometerKm != null), last = withKm[withKm.length - 1];
   $('km-input').placeholder = last ? String(last.odometerKm) : 'optional';
   if ($('soc1-input').value === '') $('soc1-input').value = '80';
+  const live = getLive();                                // laufende/beendete Live-Ladung: Felder vorbelegen (Zählerstand bitte gegenlesen)
+  if (live?.kwhTarget != null) {
+    const kwh = liveKwh(live);
+    if ($('soc0-input').value === '') $('soc0-input').value = live.socStart;
+    if (['', '80'].includes($('soc1-input').value)) $('soc1-input').value = Math.floor(live.socStart + kwh * live.eff / live.battery * 100);
+    if ($('reading-input').value === '') $('reading-input').value = (live.baseReading + kwh).toFixed(1);
+  }
 }
 const optNum = (s) => String(s).trim() === '' ? null : parseNum(s);      // leer -> null, ungültig -> NaN
 
@@ -530,41 +556,87 @@ const getLive = () => load(KEY_LIVE, null);
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });   // 04.10.2026
 const pad2 = (n) => String(n).padStart(2, '0');
 
+const hhmm = (ms) => { const t = new Date(ms); return pad2(t.getHours()) + ':' + pad2(t.getMinutes()); };
+const fmtHM = (sec) => Math.floor(sec / 3600) + ':' + pad2(Math.floor(sec % 3600 / 60));
+/** Bisher geladene kWh am Zähler; bei gesetztem Ziel am Zielwert gedeckelt. */
+const liveKwh = (live) => {
+  const raw = Math.max(0, (Date.now() - live.startedAt) / 3600000 * LIVE_SPEED) * CHARGE_POWER_KW;
+  return live.kwhTarget != null ? Math.min(raw, live.kwhTarget) : raw;
+};
+/** Ladewirkungsgrad aus der Historie (gespeicherte Energie / Zählerenergie); ohne Daten Standardwert 90 %. */
+function chargeEfficiency() {
+  const rs = getReadings(); let chg = 0, st = 0;
+  rs.forEach((r, i) => { const s = entryStats(rs, i); if (s.stored !== undefined) { chg += r.consumedSinceLast; st += s.stored; } });
+  return chg > 0 ? { eff: Math.min(1, Math.max(0.5, st / chg)), hist: true } : { eff: 0.9, hist: false };
+}
+/** Prognose für Start- und Ziel-%: Zähler-kWh = Batterieenergie / Wirkungsgrad; Dauer = kWh / 7 kW. */
+function liveForecast(s0, s1) {
+  const { eff, hist } = chargeEfficiency(), kwh = (s1 - s0) / 100 * batteryKwh() / eff;
+  return { kwh, eff, hist, hours: kwh / CHARGE_POWER_KW, cost: kwh * getSettings().price };
+}
+
 function renderLive() {
-  const live = getLive(), on = !!live;
+  const live = getLive(), on = !!live, hasT = on && live.kwhTarget != null;
+  const kwh = on ? liveKwh(live) : 0, done = hasT && kwh >= live.kwhTarget, charging = on && !done;
   const btn = $('btn-live');
-  ['animate-pulse', 'bg-red-600', 'text-white'].forEach(c => btn.classList.toggle(c, on));        // Button pulsiert, solange Live aktiv ist
+  btn.classList.toggle('animate-pulse', charging);                                               // Button pulsiert nur während der Ladung
+  ['bg-red-600', 'text-white'].forEach(c => btn.classList.toggle(c, on));
   ['bg-slate-200', 'dark:bg-slate-800'].forEach(c => btn.classList.toggle(c, !on));
   $('live-dot').classList.toggle('bg-white', on); $('live-dot').classList.toggle('bg-slate-400', !on);
-  $('phase-leds').classList.toggle('live-on', on);                                              // Phasen-LEDs pulsieren nur im Live-Modus
-  $('dash-title').textContent = on ? 'Live-Simulation · ' + CHARGE_POWER_KW + ' kW' : 'Aktueller Zählerstand';
+  $('phase-leds').classList.toggle('live-on', charging);
+  $('live-battery').classList.toggle('hidden', !hasT);
+  $('dash-title').textContent = !on ? 'Aktueller Zählerstand' : done ? 'Ladung abgeschlossen' : 'Live-Simulation · ' + CHARGE_POWER_KW + ' kW';
   $('live-info').classList.toggle('hidden', !on);
   if (!on) return;
 
-  const elapsedMs = Date.now() - live.startedAt;
-  const kwh = Math.max(0, elapsedMs / 3600000 * LIVE_SPEED) * CHARGE_POWER_KW;       // kWh = Stunden x kW
+  const finishAt = hasT ? live.startedAt + live.kwhTarget / CHARGE_POWER_KW * 3600000 / LIVE_SPEED : null;
+  const elapsedMs = (done ? finishAt : Date.now()) - live.startedAt;
   $('dash-reading').textContent = (live.baseReading + kwh).toFixed(1).padStart(8, '0');
-  $('dash-last-cost').textContent = eur(kwh * live.price);                           // Kosten = kWh x Preis
+  $('dash-last-cost').textContent = eur(kwh * live.price);                                       // Kosten = kWh x Preis
   $('dash-last-kwh').textContent = fmt(kwh, 2) + ' kWh';
-  $('dash-last-label').textContent = 'Letzte Ladung (' + fmtDate(live.startedAt) + ')';          // Live: Startdatum der laufenden Ladung
+  $('dash-last-label').textContent = 'Letzte Ladung (' + fmtDate(live.startedAt) + ')';
+  $('live-info').textContent = 'Start ' + hhmm(live.startedAt) + ' Uhr · Dauer ' + fmtHM(elapsedMs / 1000) + ':' + pad2(Math.floor(elapsedMs / 1000) % 60);
 
-  const s = Math.floor(elapsedMs / 1000), start = new Date(live.startedAt);
-  $('live-info').textContent = 'Start ' + pad2(start.getHours()) + ':' + pad2(start.getMinutes()) + ' Uhr · Dauer ' +
-                               Math.floor(s / 3600) + ':' + pad2(Math.floor(s % 3600 / 60)) + ':' + pad2(s % 60);
+  if (hasT) {                                                                                    // Akku-Balken
+    const soc = Math.min(live.socTarget, live.socStart + kwh * live.eff / live.battery * 100);
+    $('batt-fill').style.width = soc + '%'; $('batt-target').style.left = live.socTarget + '%';
+    $('batt-text').textContent = Math.floor(soc) + ' %';
+    $('batt-note').textContent = done ? 'Ziel ' + live.socTarget + ' % erreicht um ' + hhmm(finishAt) + ' Uhr'
+      : 'Ziel ' + live.socTarget + ' % · fertig ca. ' + hhmm(finishAt) + ' Uhr · noch ' + fmtHM(Math.max(0, (finishAt - Date.now()) / 1000)) + ' h · ca. ' + eur(live.kwhTarget * live.price);
+  }
 }
 
 function tickLive() { renderLive(); if (!liveTimer) liveTimer = setInterval(renderLive, 1000); }
 
-function startLive() {
-  const readings = getReadings(), last = readings[readings.length - 1];
-  if (save(KEY_LIVE, { startedAt: Date.now(), baseReading: last ? last.totalReading : 0, price: getSettings().price })) tickLive();
+function startLive(socStart, socTarget) {
+  const readings = getReadings(), last = readings[readings.length - 1], f = liveForecast(socStart, socTarget);
+  const state = { startedAt: Date.now(), baseReading: last ? last.totalReading : 0, price: getSettings().price,
+                  socStart, socTarget, kwhTarget: f.kwh, eff: f.eff, battery: batteryKwh() };       // alles Nötige beim Start einfrieren
+  if (save(KEY_LIVE, state)) { $('live-setup').classList.add('hidden'); tickLive(); }
 }
 function stopLive(refresh = true) {
   localStorage.removeItem(KEY_LIVE);
   clearInterval(liveTimer); liveTimer = null;
   if (refresh) renderDashboard();                       // alten Zählerstand und echte Werte wieder anzeigen
 }
-$('btn-live').addEventListener('click', () => getLive() ? stopLive() : startLive());
+const liveInputs = () => [optNum($('live-soc0').value), optNum($('live-soc1').value)];
+const liveValid = ([a, b]) => a != null && b != null && isFinite(a) && isFinite(b) && a >= 0 && b <= 100 && b > a;
+function updateLiveForecast() {
+  const v = liveInputs();
+  $('live-forecast').textContent = !liveValid(v) ? '' : (f => 'ca. ' + fmtHM(f.hours * 3600) + ' h · ' + fmt(f.kwh, 1) + ' kWh · ca. ' + eur(f.cost) +
+    ' (Wirkungsgrad ' + Math.round(f.eff * 100) + ' % ' + (f.hist ? 'aus Historie' : '– Standardwert') + ')')(liveForecast(v[0], v[1]));
+}
+$('btn-live').addEventListener('click', () => {
+  if (getLive()) return stopLive();
+  const panel = $('live-setup'); panel.classList.toggle('hidden'); updateLiveForecast();        // erst Start-/Ziel-% abfragen
+});
+$('live-cancel').addEventListener('click', () => $('live-setup').classList.add('hidden'));
+$('live-go').addEventListener('click', () => {
+  const v = liveInputs();
+  if (!liveValid(v)) { $('live-forecast').textContent = 'Bitte Start- und Ziel-% prüfen (0–100, Ziel größer als Start).'; return; }
+  startLive(v[0], v[1]);
+});
+['live-soc0', 'live-soc1'].forEach(id => $(id).addEventListener('input', updateLiveForecast));
 document.addEventListener('visibilitychange', () => { if (!document.hidden && getLive()) renderLive(); });
 
 /* =====================================================================
