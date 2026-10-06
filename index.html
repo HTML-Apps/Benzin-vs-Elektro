@@ -136,8 +136,8 @@
     <h1 class="text-xl font-semibold">Zählerstand erfassen</h1>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <p class="flex items-center justify-between h-7 text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Zählerstand</span><span>kWh</span></p>
-      <div id="seg2-box" class="lcd relative rounded-xl px-3 py-4 flex items-end justify-end gap-2 focus-within:ring-2 focus-within:ring-emerald-500">
+      <p class="flex items-center justify-between h-7 text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Zählerstand</span></p>
+      <div id="seg2-box" class="lcd relative rounded-xl px-3 py-4 flex items-end justify-end gap-2 focus-within:ring-2 focus-within:ring-blue-800 focus-within:shadow-[0_0_14px_3px_rgba(30,64,175,0.7)]">
         <span id="seg2-wrap" class="seg-wrap seg"><span class="seg-ghost">888888.8</span><span id="seg2-on" class="seg-on"></span></span>
         <span id="seg2-unit" class="text-sm pb-1">kWh</span>
         <input id="reading-input" type="text" inputmode="decimal" autocomplete="off" aria-label="Zählerstand in kWh" class="absolute inset-0 w-full h-full opacity-0 cursor-text">
@@ -146,12 +146,12 @@
     </div>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <p class="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Kilometerstand</span><span>vom Auto</span></p>
+      <p class="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Kilometerstand</span></p>
       <div id="odo" class="flex justify-center gap-1"></div>
       <input id="km-input" type="hidden">
       <div class="flex justify-between items-center gap-2 mt-3">
         <span id="odo-info" class="text-xs text-slate-500 dark:text-slate-400"></span>
-        <button id="btn-odo" class="shrink-0 text-sm px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Vom Auto laden</button>
+        <button id="btn-odo" class="shrink-0 text-sm px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Update</button>
       </div>
     </div>
 
@@ -349,7 +349,7 @@ function paintBatt() {
   $('bt-b').style.left = a + '%'; $('bt-b').style.width = Math.max(0, b - a) + '%';   // grau: hinzukommende Ladung
   const place = (id, pct, txt) => { const el = $(id); el.textContent = txt; el.style.left = Math.min(94, Math.max(6, pct)) + '%'; };
   place('bt-l0', a, has0 ? a + ' %' : '–'); place('bt-l1', Math.max(b, a + 14), has1 ? b + ' %' : '–');
-  $('batt-add').textContent = has0 && has1 && b > a ? '+' + (b - a) + ' % ≈ ' + fmt((b - a) / 100 * batteryKwh(), 1) + ' kWh in der Batterie' : '';
+  $('batt-add').textContent = has0 && has1 && b > a ? '+' + (b - a) + ' % ≈ ' + fmt((b - a) / 100 * batteryKwh(), 1) + ' kWh' : '';
 }
 function paintCapture() { paintReading(); paintBatt(); }
 
