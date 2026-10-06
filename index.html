@@ -240,7 +240,7 @@
         <label for="set-keyexp" class="text-sm text-slate-500 dark:text-slate-400">Škoda-API-Schlüssel gültig bis</label>
         <input id="set-keyexp" type="date"
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        <p class="text-xs text-slate-500 mt-1">Die App erinnert 30 Tage vor Ablauf. Nach einem neuen Schlüssel: in Vercel ersetzen, neu deployen und hier das Datum anpassen (wird bei Live-Abrufen sonst automatisch übernommen).</p>
+        <p class="text-xs text-slate-500 mt-1">Die App erinnert 7 Tage vor Ablauf. Nach einem neuen Schlüssel: in Vercel ersetzen, neu deployen und hier das Datum anpassen (wird bei Live-Abrufen sonst automatisch übernommen).</p>
       </div>
       <button id="btn-save-settings" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Einstellungen speichern</button>
       <p id="settings-msg" class="hidden text-sm text-emerald-700 dark:text-emerald-400">Gespeichert.</p>
@@ -421,12 +421,12 @@ function commitReadings(next) {
 }
 const DEFAULT_KEY_EXPIRY = '2027-04-03';                       // Ablauf des Škoda-API-Schlüssels (änderbar in den Einstellungen)
 const keyExpiry = () => getSettings().keyExpiry || DEFAULT_KEY_EXPIRY;
-function renderKeyWarning() {                                   // Erinnerung ab 30 Tagen vor Ablauf, danach dauerhaft bis zur Erneuerung
+function renderKeyWarning() {                                   // Erinnerung ab 7 Tagen vor Ablauf, danach dauerhaft bis zur Erneuerung
   const el = $('key-warn'), end = new Date(keyExpiry() + 'T23:59:59');
   const days = Math.ceil((end - Date.now()) / 86400000), date = end.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  el.classList.toggle('hidden', !(days <= 30));
-  if (days > 30) return;
-  const urgent = days <= 7;
+  el.classList.toggle('hidden', !(days <= 7));
+  if (days > 7) return;
+  const urgent = days <= 2;                                       // rot ab 2 Tagen vor Ablauf, davor gelb
   el.className = 'rounded-2xl p-3 text-sm ' + (urgent ? 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200' : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200');
   el.textContent = (days < 0 ? 'Der Škoda-API-Schlüssel ist seit ' + date + ' abgelaufen.' : days === 0 ? 'Der Škoda-API-Schlüssel läuft heute ab (' + date + ').' : 'Der Škoda-API-Schlüssel läuft in ' + days + (days === 1 ? ' Tag' : ' Tagen') + ' ab (' + date + ').')
     + ' Neuen Schlüssel in der MyŠkoda-App erzeugen, in Vercel (SKODA_API_KEY) ersetzen, neu deployen und das Datum in den Einstellungen anpassen.';
@@ -908,9 +908,9 @@ function renderHistory() {
 
     const st = entryStats(readings, i);
     const row = (k, v) => `<div class="flex justify-between items-baseline mt-2"><span class="text-sm text-slate-500 dark:text-slate-400">${k}</span><span class="font-medium text-right">${v}</span></div>`;
-    const extra = (r.odometerKm != null ? row('Kilometerstand', fmt(r.odometerKm, 0) + ' km' + (st.km ? ' <span class="text-xs text-slate-500">(+' + fmt(st.km, 0) + ' km)</span>' : '')) : '') +
-      (r.socStart != null && r.socEnd != null ? row('Ladestand', r.socStart + ' % → ' + r.socEnd + ' %' + (st.loss != null && st.loss >= 0 && st.loss < 60 ? ' <span class="text-xs text-slate-500">(Verlust ≈ ' + fmt(st.loss, 0) + ' %)</span>' : '')) : '') +
-      (st.kwh100 ? row('Verbrauch', fmt(st.kwh100, 1) + ' kWh/100 km · ' + eur(st.cost100) + '/100 km') : '');
+    const extra = (r.odometerKm != null ? row('Kilometerstand', (st.km ? '<span class="text-xs font-normal text-slate-500">(+' + fmt(st.km, 0) + ' km)</span> ' : '') + fmt(r.odometerKm, 0) + ' km') : '') +
+      (r.socStart != null && r.socEnd != null ? row('Ladestand', (st.loss != null && st.loss >= 0 && st.loss < 60 ? '<span class="text-xs font-normal text-slate-500">(Verlust ≈ ' + fmt(st.loss, 0) + ' %)</span> ' : '') + r.socStart + ' % → ' + r.socEnd + ' %') : '') +
+      (st.kwh100 ? row('Verbrauch/100 km', fmt(st.kwh100, 1) + ' kWh · ' + eur(st.cost100)) : '');
 
     if (editMode) {
       return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 ring-2 ring-emerald-500/40">
