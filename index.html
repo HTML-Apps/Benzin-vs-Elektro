@@ -45,7 +45,8 @@
 
   <!-- ============ VIEW 1: DASHBOARD ============ -->
   <section id="view-dashboard" class="view space-y-4">
-    <h1 class="text-xl font-semibold">Skoda Enyaq | Ladekosten NK</h1>
+    <h1 id="app-title" class="text-xl font-semibold">Skoda Enyaq | Ladekosten NK</h1>
+    <div id="setup-hint" class="hidden rounded-2xl p-3 text-sm bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200">Willkommen! Trage unter „Einstellungen“ zuerst Strompreis, Nettokapazität der Batterie und Ladeleistung deines Autos ein, damit alle Berechnungen stimmen.</div>
     <div id="key-warn" class="hidden rounded-2xl p-3 text-sm"></div>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
@@ -240,6 +241,11 @@
     <h1 class="text-xl font-semibold">Einstellungen</h1>
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 space-y-4">
       <div>
+        <label for="set-title" class="text-sm text-slate-500 dark:text-slate-400">App-Titel</label>
+        <input id="set-title" type="text" placeholder="z. B. Skoda Epiq | Ladekosten"
+               class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      </div>
+      <div>
         <label for="set-price" class="text-sm text-slate-500 dark:text-slate-400">Strompreis in € pro kWh</label>
         <input id="set-price" type="text" inputmode="decimal" placeholder="0,307"
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -347,6 +353,7 @@ const odoCols = [];
 
 /** Trommeln auf den km-Stand drehen (reset = erst auf 0 zurücksetzen, damit die Drehung sichtbar wird). */
 function paintOdo(reset) {
+  $('btn-odo').classList.toggle('hidden', !apiEnabled());                // Update-Button nur mit Škoda-Anbindung
   const kmVal = optNum($('km-input').value), fromCar = kmVal != null && isFinite(kmVal);
   const withKm = getReadings().filter(r => r.odometerKm != null), last = withKm[withKm.length - 1];
   const shown = fromCar ? kmVal : (last ? last.odometerKm : 0);
@@ -460,9 +467,14 @@ function commitReadings(next) {
   });
 }
 const DEFAULT_KEY_EXPIRY = '2027-04-03';                       // Ablauf des Škoda-API-Schlüssels (änderbar in den Einstellungen)
+const apiEnabled = () => !!String(getSettings().pin || '').trim();            // ohne PIN keine Škoda-Abfragen
+const DEFAULT_TITLE = 'Skoda Enyaq | Ladekosten NK';
+function applyTitle() { const t = getSettings().title || DEFAULT_TITLE; $('app-title').textContent = t; document.title = t; }
+function renderSetupHint() { $('setup-hint').classList.toggle('hidden', !!localStorage.getItem(KEY_SETTINGS)); }   // Hinweis, bis die Einstellungen einmal gespeichert wurden
 const keyExpiry = () => getSettings().keyExpiry || DEFAULT_KEY_EXPIRY;
 function renderKeyWarning() {                                   // Erinnerung ab 7 Tagen vor Ablauf, danach dauerhaft bis zur Erneuerung
   const el = $('key-warn'), end = new Date(keyExpiry() + 'T23:59:59');
+  if (!apiEnabled()) { el.classList.add('hidden'); return; }               // ohne Škoda-Anbindung keine Schlüssel-Erinnerung
   const days = Math.ceil((end - Date.now()) / 86400000), date = end.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   el.classList.toggle('hidden', !(days <= 7));
   if (days > 7) return;
@@ -630,6 +642,7 @@ function fillSettings() {
   $('set-key').value = s.pin;
   $('set-battery').value = String(batteryKwh()).replace('.', ',');
   $('set-keyexp').value = keyExpiry();
+  $('set-title').value = s.title || DEFAULT_TITLE;
   $('set-power').value = String(chargePowerKw()).replace('.', ',');
 }
 $('btn-save-settings').addEventListener('click', () => {
@@ -639,7 +652,7 @@ $('btn-save-settings').addEventListener('click', () => {
   if (!isFinite(battery) || battery < 10 || battery > 200) { alert('Bitte eine gültige Nettokapazität in kWh eingeben (z. B. 52).'); return; }
   const power = parseNum($('set-power').value);
   if (!isFinite(power) || power < 0.5 || power > 50) { alert('Bitte eine gültige Ladeleistung in kW eingeben (z. B. 7).'); return; }
-  if (save(KEY_SETTINGS, { price, battery, power, keyExpiry: $('set-keyexp').value || DEFAULT_KEY_EXPIRY, pin: $('set-key').value.trim() })) {
+  if (save(KEY_SETTINGS, { title: $('set-title').value.trim() || DEFAULT_TITLE, price, battery, power, keyExpiry: $('set-keyexp').value || DEFAULT_KEY_EXPIRY, pin: $('set-key').value.trim() })) {
     $('settings-msg').classList.remove('hidden'); setTimeout(() => $('settings-msg').classList.add('hidden'), 2500);
   }
 });
@@ -757,7 +770,7 @@ function liveForecast(s0, s1) {
 function renderLive() {
   const live = getLive(), on = !!live, hasT = on && live.kwhTarget != null;
   const kwh = on ? liveKwh(live) : 0, done = hasT && kwh >= live.kwhTarget, charging = on && !done;
-  if (charging && hasT && !document.hidden && Date.now() - (live.lastPollAt ?? live.startedAt) >= LIVE_POLL_MS) pollLive();   // alle 6 Minuten mit dem Auto abgleichen
+  if (charging && hasT && apiEnabled() && !document.hidden && Date.now() - (live.lastPollAt ?? live.startedAt) >= LIVE_POLL_MS) pollLive();   // alle 6 Minuten mit dem Auto abgleichen
   $('live-sync').textContent = hasT ? (live.syncNote || '') : '';
   const btn = $('btn-live');
   btn.classList.toggle('animate-pulse', charging);                                               // Button pulsiert nur während der Ladung
@@ -851,7 +864,7 @@ let carData = null;
 async function loadFromCar() {
   const note = $('live-car-note'), pin = getSettings().pin;
   carData = null;
-  if (!pin) { note.textContent = 'Fahrzeugdaten: bitte zuerst die PIN in den Einstellungen eintragen.'; return; }
+  if (!pin) { note.textContent = 'Manuelle Eingabe (keine Fahrzeugdaten verbunden).'; return; }
   note.textContent = 'Lade Fahrzeugdaten …';
   try {
     const res = await fetch('/api/vehicle', { headers: { 'x-app-pin': pin } });
@@ -991,6 +1004,7 @@ function renderLossChart() {
 }
 
 function renderDashboard() {
+  applyTitle(); renderSetupHint();
   const readings = getReadings(), last = readings[readings.length - 1];
   $('dash-reading').textContent = (last ? last.totalReading : 0).toFixed(1).padStart(8, '0');   // 6 Stellen + Komma + 1 Nachkommastelle
   $('dash-last-cost').textContent = last ? eur(last.cost) : '–';
@@ -1260,8 +1274,14 @@ function refreshViews() {
   if (v?.id === 'view-history') renderHistory();
 }
 const sameId = (a, b) => String(a.id) === String(b.id);
+const KEY_CACHE_UID = 'enyaq.cacheUid';                   // Konto (UID), zu dem der lokale Cache gehört
 
-window.onCloudReadings = (cloud, isFirst) => {
+window.onCloudReadings = (cloud, isFirst, uid) => {
+  if (isFirst && uid) {                                    // Schutz: Daten eines anderen Kontos nie in dieses Konto hochladen
+    const prev = localStorage.getItem(KEY_CACHE_UID);
+    if (prev && prev !== uid) { save(KEY_READINGS, []); stopLive(false); }
+    localStorage.setItem(KEY_CACHE_UID, uid);
+  }
   cloud = cloud.sort((a, b) => new Date(a.date) - new Date(b.date));
   if (isFirst) {                                         // beim ersten Abgleich: lokale Einträge, die in der Cloud fehlen
     const missing = getReadings().filter(r => !cloud.some(c => sameId(c, r)));
@@ -1336,11 +1356,11 @@ window.cloud = {
 
 onAuthStateChanged(auth, (u) => {
   user = u; if (unsub) { unsub(); unsub = null; }
-  window.onCloudStatus?.(u ? { email: u.email || u.displayName || 'Konto' } : null);
+  window.onCloudStatus?.(u ? { email: u.email || u.displayName || 'Konto', uid: u.uid } : null);
   if (!u) return;
   let first = true;
   unsub = onSnapshot(col(), (snap) => {
-    window.onCloudReadings(snap.docs.map(d => d.data()), first); first = false;
+    window.onCloudReadings(snap.docs.map(d => d.data()), first, u.uid); first = false;
   }, (err) => window.onCloudStatus?.({ error: err.code === 'permission-denied' ? 'Keine Berechtigung (Firestore-Regel für enyaqStrom fehlt?)' : err.message }));
 });
 </script>
