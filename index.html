@@ -32,8 +32,8 @@
   @media (prefers-reduced-motion: reduce) { .live-on .phase-led { animation: none; opacity: 1; } }
   .odo-drum { width: 2.1rem; height: 3.1rem; background: #1c1c1c; border: 1px solid #444; border-radius: 4px; overflow: hidden; position: relative; }
   .odo-col { position: absolute; left: 0; right: 0; top: 0; transition: transform 1.4s cubic-bezier(.2, .8, .2, 1); }
-  .odo-col div { height: 3.1rem; line-height: 3.1rem; text-align: center; font-size: 1.8rem; font-weight: 500; color: #f1efe8; font-family: ui-monospace, Menlo, Consolas, monospace; }
-  .odo-dim { opacity: .45; }
+  .odo-col div { height: 3.1rem; line-height: 3.1rem; text-align: center; font-size: 1.8rem; font-weight: 500; color: #ffffff; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .odo-dim { opacity: .75; }
   .spinner { width:22px;height:22px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -48,7 +48,7 @@
     <div id="key-warn" class="hidden rounded-2xl p-3 text-sm"></div>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center justify-between h-7 mb-2">
         <p id="dash-title" class="text-sm text-slate-500 dark:text-slate-400">Aktueller Zählerstand</p>
         <button id="btn-live" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-slate-200 dark:bg-slate-800 transition active:scale-95">
           <span id="live-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>Live
@@ -136,7 +136,7 @@
     <h1 class="text-xl font-semibold">Zählerstand erfassen</h1>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <p class="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Zählerstand</span><span>kWh</span></p>
+      <p class="flex items-center justify-between h-7 text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Zählerstand</span><span>kWh</span></p>
       <div id="seg2-box" class="lcd relative rounded-xl px-3 py-4 flex items-end justify-end gap-2 focus-within:ring-2 focus-within:ring-emerald-500">
         <span id="seg2-wrap" class="seg-wrap seg"><span class="seg-ghost">888888.8</span><span id="seg2-on" class="seg-on"></span></span>
         <span id="seg2-unit" class="text-sm pb-1">kWh</span>
@@ -168,7 +168,7 @@
         <span id="bt-l0" class="absolute -translate-x-1/2 text-emerald-600 dark:text-emerald-400"></span>
         <span id="bt-l1" class="absolute -translate-x-1/2"></span>
       </div>
-      <div class="grid grid-cols-[3rem_1fr] gap-x-2 gap-y-2 items-center mt-2 text-sm text-slate-500 dark:text-slate-400">
+      <div class="grid grid-cols-[3rem_1fr] gap-x-2 gap-y-4 items-center mt-2 text-sm text-slate-500 dark:text-slate-400">
         <span>Start</span><input id="rg0" type="range" min="0" max="100" step="1" class="w-full accent-emerald-500">
         <span>Ende</span><input id="rg1" type="range" min="0" max="100" step="1" class="w-full accent-emerald-500">
       </div>
@@ -386,7 +386,7 @@ function updateCaptureDefaults() {
     const kwh = liveKwh(live);
     if ($('soc0-input').value === '') $('soc0-input').value = live.socStart;
     if (['', '80'].includes($('soc1-input').value)) $('soc1-input').value = kwh >= live.kwhTarget ? live.socTarget : Math.floor(live.socStart + kwh * live.eff / live.battery * 100);   // fertig = Ziel-%
-    if (live.odometerKm != null && $('km-input').value === '') $('km-input').value = Math.round(live.odometerKm);                              // km-Stand beim Live-Start
+    if (live.odometerKm != null && $('km-input').value === '') { $('km-input').value = Math.round(live.odometerKm); $('km-input').dataset.live = '1'; }                              // km-Stand beim Live-Start
     if ($('reading-input').value === '') $('reading-input').value = (live.baseReading + kwh).toFixed(1);
   }
   paintCapture(); paintOdo(true);                        // Anzeige (Segmente, Trommeln, Akku) an die Feldwerte angleichen
@@ -578,7 +578,7 @@ $('btn-save').addEventListener('click', () => {
     else if (s.startsWith('error:')) flash($('save-msg'), msg + ' · Cloud-Fehler: ' + s.slice(6), false);
   });
   $('save-msg').classList.remove('hidden');
-  $('reading-input').value = ''; ['km-input', 'soc0-input', 'soc1-input'].forEach(id => $(id).value = ''); updateCaptureDefaults();
+  $('reading-input').value = ''; ['km-input', 'soc0-input', 'soc1-input'].forEach(id => { $(id).value = ''; delete $(id).dataset.live; }); updateCaptureDefaults();
 });
 
 /* =====================================================================
@@ -750,7 +750,11 @@ function startLive(socStart, socTarget, odometerKm = null) {
 function stopLive(refresh = true) {
   localStorage.removeItem(KEY_LIVE);
   clearInterval(liveTimer); liveTimer = null;
-  if (refresh) renderDashboard();                       // alten Zählerstand und echte Werte wieder anzeigen
+  if (refresh) {
+    ['km-input', 'soc0-input'].forEach(id => { if ($(id).dataset.live) { $(id).value = ''; delete $(id).dataset.live; } });   // nur vom Auto übernommene Werte
+    updateCaptureDefaults();
+    renderDashboard();                                  // alten Zählerstand und echte Werte wieder anzeigen
+  }
 }
 const liveInputs = () => [optNum($('live-soc0').value), optNum($('live-soc1').value)];
 const liveValid = ([a, b]) => a != null && b != null && isFinite(a) && isFinite(b) && a >= 0 && b <= 100 && b > a;
@@ -773,6 +777,9 @@ async function loadFromCar() {
     carData = d;
     const ex = d.keyExpiresAt ? new Date(d.keyExpiresAt) : null;                   // Ablaufdatum aus der Škoda-Antwort übernehmen
     if (ex && !isNaN(ex) && ex.toISOString().slice(0, 10) !== keyExpiry()) save(KEY_SETTINGS, { ...getSettings(), keyExpiry: ex.toISOString().slice(0, 10) });
+    if (d.soc != null) { $('soc0-input').value = Math.round(d.soc); $('soc0-input').dataset.live = '1'; }               // Erfassen: Akku-Start = aktueller Ladestand des Autos
+    if (d.odometerKm != null) { $('km-input').value = Math.round(d.odometerKm); $('km-input').dataset.live = '1'; }   // Erfassen: km-Trommeln
+    paintBatt(); paintOdo(true);
     if (d.soc != null) $('live-soc0').value = Math.round(d.soc);
     if (d.targetSoc != null) $('live-soc1').value = Math.round(d.targetSoc);
     updateLiveForecast();
