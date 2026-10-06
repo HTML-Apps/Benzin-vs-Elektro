@@ -254,7 +254,7 @@
         <label for="set-battery" class="text-sm text-slate-500 dark:text-slate-400">Nettokapazität der Batterie in kWh</label>
         <input id="set-battery" type="text" inputmode="decimal" placeholder="52"
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        <p class="text-xs text-slate-500 mt-1">Grundlage für die Ladeverlust-Berechnung. Rückwirkend wirksam, da die Werte immer neu berechnet werden.</p>
+        <p class="text-xs text-slate-500 mt-1">Gilt für neue Ladungen. Jede Ladung speichert die Kapazität, die zu ihrem Zeitpunkt galt, ältere Einträge ändern sich dadurch nicht (in der Historie änderbar, ältere Einträge ohne Wert rechnen mit 50 kWh).</p>
       </div>
       <div>
         <label for="set-power" class="text-sm text-slate-500 dark:text-slate-400">Ladeleistung in kW</label>
@@ -438,6 +438,8 @@ function updateCaptureDefaults() {
   }
   paintCapture(); paintOdo(true);                        // Anzeige (Segmente, Trommeln, Akku) an die Feldwerte angleichen
 }
+const LEGACY_CAPACITY_KWH = 50;                              // Kapazität für Einträge ohne gespeicherten Wert (ältere Ladungen)
+const capOf = (r) => r.capacityKwh ?? LEGACY_CAPACITY_KWH;   // Kapazität, die zum Zeitpunkt dieser Ladung galt
 const optNum = (s) => String(s).trim() === '' ? null : parseNum(s);      // leer -> null, ungültig -> NaN
 
 /** Kennzahlen eines Eintrags: Verbrauch/100 km (kWh seit der Vorgänger-Ladung / gefahrene km), gespeicherte Energie und Ladeverlust. */
@@ -449,7 +451,7 @@ function entryStats(rs, i) {
     s.cost100 = r.cost / s.km * 100;
   }
   if (r.socStart != null && r.socEnd != null && r.socEnd > r.socStart && r.consumedSinceLast > 0) {
-    s.stored = (r.socEnd - r.socStart) / 100 * batteryKwh();            // tatsächlich in der Batterie angekommene Energie
+    s.stored = (r.socEnd - r.socStart) / 100 * capOf(r);            // tatsächlich in der Batterie angekommene Energie
     s.loss = (1 - s.stored / r.consumedSinceLast) * 100;                    // Ladeverlust in %
   }
   return s;
@@ -617,6 +619,7 @@ $('btn-save').addEventListener('click', () => {
   const entry = { id: Date.now(), date: new Date().toISOString(), totalReading: value, consumedSinceLast: consumed, cost };
   if (km != null) entry.odometerKm = km;                // optionale Felder nur setzen, wenn vorhanden (Firestore verbietet undefined)
   if (s0 != null) entry.socStart = s0;
+  entry.capacityKwh = batteryKwh();                      // Kapazität zum Zeitpunkt der Ladung festhalten
   if (s1 != null) entry.socEnd = s1;
   readings.push(entry);
   const status = commitReadings(readings);
@@ -949,7 +952,7 @@ function renderEfficiency() {                            // gewichteter Durchsch
   $('eff-kwh').textContent = km ? fmt(kwh / km * 100, 1) : '–';
   $('eff-cost').textContent = km ? eur(cost / km * 100) : '–';
   $('eff-loss').textContent = chg ? fmt(Math.max(0, (1 - stored / chg) * 100), 0) + ' %' : '–';
-  $('eff-note').textContent = (nKm || nSoc) ? 'Basis: ' + nKm + ' Ladungen mit km-Stand, ' + nSoc + ' mit Akku-Stand (Kapazität ' + batteryKwh() + ' kWh)'
+  $('eff-note').textContent = (nKm || nSoc) ? 'Basis: ' + nKm + ' Ladungen mit km-Stand, ' + nSoc + ' mit Akku-Stand'
                                               : 'Erfasse km-Stand und Akku-% bei den Ladungen, um Werte zu sehen.';
 }
 
@@ -983,7 +986,7 @@ function renderLossChart() {
   }
   const has = kwh.some(v => v != null);
   $('loss-chart').parentElement.classList.toggle('hidden', !has); $('loss-empty').classList.toggle('hidden', has);
-  $('loss-note').textContent = n ? 'Basis: ' + n + ' Ladungen · Nettokapazität ' + batteryKwh() + ' kWh · enthält u. a. Batterieheizung und Wandlerverluste' : '';
+  $('loss-note').textContent = n ? 'Basis: ' + n + ' Ladungen · Kapazität je Ladung gespeichert · enthält u. a. Batterieheizung und Wandlerverluste' : '';
   if (lossChart) lossChart.destroy();
   if (!has) return;
   const dark = matchMedia('(prefers-color-scheme: dark)').matches, text = dark ? '#cbd5e1' : '#475569', grid = dark ? 'rgba(148,163,184,.15)' : 'rgba(100,116,139,.15)';
@@ -1057,7 +1060,7 @@ function renderHistory() {
     const st = entryStats(readings, i);
     const row = (k, v) => `<div class="flex justify-between items-baseline mt-2"><span class="text-sm text-slate-500 dark:text-slate-400">${k}</span><span class="font-medium text-right">${v}</span></div>`;
     const extra = (r.odometerKm != null ? row('Kilometerstand', (st.km ? '<span class="text-xs font-normal text-slate-500">(+' + fmt(st.km, 0) + ' km)</span> ' : '') + fmt(r.odometerKm, 0) + ' km') : '') +
-      (r.socStart != null && r.socEnd != null ? row('Ladestand', (st.loss != null && st.loss >= 0 && st.loss < 60 ? '<span class="text-xs font-normal text-slate-500">(Verlust ≈ ' + fmt(st.loss, 0) + ' %)</span> ' : '') + r.socStart + ' % → ' + r.socEnd + ' %') : '') +
+      (r.socStart != null && r.socEnd != null ? row('Ladestand', (st.loss != null && st.loss >= 0 && st.loss < 60 ? '<span class="text-xs font-normal text-slate-500">(Verlust ≈ ' + fmt(st.loss, 0) + ' %)</span> ' : '') + r.socStart + ' % → ' + r.socEnd + ' %') + row('Batteriekapazität', fmt(capOf(r), 1) + ' kWh') : '') +
       (st.kwh100 ? row('Verbrauch/100 km', fmt(st.kwh100, 1) + ' kWh · ' + eur(st.cost100)) : '');
 
     if (editMode) {
@@ -1081,6 +1084,9 @@ function renderHistory() {
           <div><p class="text-xs text-slate-500 dark:text-slate-400 mb-1">km-Stand</p><input data-f="km" type="text" inputmode="decimal" value="${r.odometerKm ?? ''}" class="${INPUT_CLS}"></div>
           <div><p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Akku Start %</p><input data-f="s0" type="text" inputmode="decimal" value="${r.socStart ?? ''}" class="${INPUT_CLS}"></div>
           <div><p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Akku Ende %</p><input data-f="s1" type="text" inputmode="decimal" value="${r.socEnd ?? ''}" class="${INPUT_CLS}"></div>
+        </div>
+        <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div><p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Kapazität kWh</p><input data-f="cap" type="text" inputmode="decimal" value="${capOf(r)}" class="${INPUT_CLS}"></div>
         </div>
         <button data-f="delbtn" data-del="0" class="mt-3 w-full py-2 rounded-xl border border-red-500 text-red-600 dark:text-red-400 text-sm font-medium">Eintrag löschen</button>
       </li>`;
@@ -1146,12 +1152,13 @@ $('btn-edit-save').addEventListener('click', () => {
   const stored = getReadings(), currentPrice = getSettings().price;
   const all = stored.map((r, i) => ({
     r, date: new Date(cell(i, 'date').value), neu: Math.round(parseNum(cell(i, 'new').value) * 10) / 10,
-    km: optNum(cell(i, 'km').value), s0: optNum(cell(i, 's0').value), s1: optNum(cell(i, 's1').value), del: cell(i, 'delbtn').dataset.del === '1'
+    cap: parseNum(cell(i, 'cap').value), km: optNum(cell(i, 'km').value), s0: optNum(cell(i, 's0').value), s1: optNum(cell(i, 's1').value), del: cell(i, 'delbtn').dataset.del === '1'
   }));
   if (all.some(x => isNaN(x.date) || !isFinite(x.neu) || x.neu < 0)) { alert('Bitte gültige Datums- und Zählerstandswerte eingeben.'); return; }
   if (all.some(x => [x.km, x.s0, x.s1].some(Number.isNaN) || (x.km != null && x.km < 0) || [x.s0, x.s1].some(v => v != null && (v < 0 || v > 100)) || (x.s0 != null && x.s1 != null && x.s1 <= x.s0))) {
     alert('Bitte km-Stand und Akku-Prozente prüfen (0–100 %, Ende größer als Start).'); return;
   }
+  if (all.some(x => !isFinite(x.cap) || x.cap < 10 || x.cap > 200)) { alert('Bitte eine gültige Batteriekapazität in kWh eingeben (10 bis 200).'); return; }
   const gone = all.filter(x => x.del).length;
   if (gone && !confirm(gone + (gone === 1 ? ' Eintrag wird' : ' Einträge werden') + ' gelöscht (auch in der Cloud). Fortfahren?')) return;
   const items = all.filter(x => !x.del);
@@ -1168,6 +1175,7 @@ $('btn-edit-save').addEventListener('click', () => {
     if (x.km != null) out.odometerKm = x.km;
     if (x.s0 != null) out.socStart = x.s0;
     if (x.s1 != null) out.socEnd = x.s1;
+    out.capacityKwh = x.cap;
     return out;
   });
   if (commitReadings(result)) { deferredCloud = null; setEditMode(false); }
@@ -1232,9 +1240,9 @@ function parseImport(text) {
     if (!Number.isFinite(id) || seen.has(id)) id = Date.now() + i;      // IDs eindeutig halten
     seen.add(id);
     const out = { id, date: date.toISOString(), totalReading: r.totalReading, consumedSinceLast: r.consumedSinceLast, cost: r.cost };
-    for (const k of ['odometerKm', 'socStart', 'socEnd']) {            // optionale Felder prüfen und übernehmen
+    for (const k of ['odometerKm', 'socStart', 'socEnd', 'capacityKwh']) {            // optionale Felder prüfen und übernehmen
       if (r[k] === undefined || r[k] === null) continue;
-      if (typeof r[k] !== 'number' || !isFinite(r[k]) || r[k] < 0 || (k !== 'odometerKm' && r[k] > 100)) throw new Error('Feld ' + k + ' in Eintrag ' + (i + 1) + ' ist ungültig.');
+      if (typeof r[k] !== 'number' || !isFinite(r[k]) || r[k] < 0 || (k === 'capacityKwh' ? (r[k] < 10 || r[k] > 200) : (k !== 'odometerKm' && r[k] > 100))) throw new Error('Feld ' + k + ' in Eintrag ' + (i + 1) + ' ist ungültig.');
       out[k] = r[k];
     }
     return out;
@@ -1334,7 +1342,7 @@ const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });   // Offline-Queue
 let user = null, unsub = null;
 const col = () => collection(db, 'enyaqStrom', user.uid, 'readings');
-const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost, r.odometerKm, r.socStart, r.socEnd].join('|');
+const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost, r.odometerKm, r.socStart, r.socEnd, r.capacityKwh].join('|');
 
 window.cloud = {
   isSignedIn: () => !!user,
