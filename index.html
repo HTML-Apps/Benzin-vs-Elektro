@@ -85,6 +85,7 @@
           <span id="batt-text" class="absolute inset-0 flex items-center justify-center text-sm font-semibold text-slate-900 dark:text-white"></span>
         </div>
         <p id="batt-note" class="text-xs text-slate-500 dark:text-slate-400 mt-1 text-center"></p>
+        <p id="live-sync" class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 text-center"></p>
       </div>
       <div class="grid grid-cols-2 gap-3 mt-4">
         <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3 flex flex-col justify-between">
@@ -129,6 +130,18 @@
       </div>
       <p id="eff-note" class="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center"></p>
     </div>
+
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Ladeverluste im Jahresverlauf</p>
+      <div class="grid grid-cols-3 gap-2 text-center">
+        <div class="rounded-2xl bg-amber-50 dark:bg-amber-950/40 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">Sommer</p><p id="loss-summer" class="text-xl font-semibold text-amber-700 dark:text-amber-300">–</p><p class="text-xs text-slate-500 dark:text-slate-400">Apr–Sep</p></div>
+        <div class="rounded-2xl bg-sky-50 dark:bg-sky-950/50 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">Winter</p><p id="loss-winter" class="text-xl font-semibold text-sky-700 dark:text-sky-300">–</p><p class="text-xs text-slate-500 dark:text-slate-400">Okt–Mär</p></div>
+        <div class="rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">Verlustkosten</p><p id="loss-cost" class="text-xl font-semibold text-emerald-700 dark:text-emerald-300">–</p><p class="text-xs text-slate-500 dark:text-slate-400">gesamt</p></div>
+      </div>
+      <div class="relative h-56 mt-4"><canvas id="loss-chart"></canvas></div>
+      <p id="loss-empty" class="hidden text-center text-sm text-slate-500 py-6">Noch keine Ladungen mit Akku-Start und -Ende erfasst.</p>
+      <p id="loss-note" class="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center"></p>
+    </div>
   </section>
 
   <!-- ============ VIEW 2: ERFASSEN ============ -->
@@ -137,10 +150,16 @@
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <p class="flex items-center justify-between h-7 text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Zählerstand</span></p>
-      <div id="seg2-box" class="lcd relative rounded-xl px-3 py-4 flex items-end justify-end gap-2 focus-within:ring-2 focus-within:ring-blue-800 focus-within:shadow-[0_0_14px_3px_rgba(30,64,175,0.7)]">
+      <div class="flex gap-2 items-stretch">
+        <div id="seg2-box" class="flex-1 min-w-0 lcd relative rounded-xl px-3 py-4 flex items-end justify-end gap-2 focus-within:ring-2 focus-within:ring-blue-800 focus-within:shadow-[0_0_14px_3px_rgba(30,64,175,0.7)]">
         <span id="seg2-wrap" class="seg-wrap seg"><span class="seg-ghost">888888.8</span><span id="seg2-on" class="seg-on"></span></span>
         <span id="seg2-unit" class="text-sm pb-1">kWh</span>
         <input id="reading-input" type="text" inputmode="decimal" autocomplete="off" aria-label="Zählerstand in kWh" class="absolute inset-0 w-full h-full opacity-0 cursor-text">
+      </div>
+        <div class="flex flex-col gap-1 w-10 shrink-0">
+          <button id="rd-plus" type="button" aria-label="Zählerstand um 0,1 erhöhen" class="flex-1 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-2xl font-semibold leading-none active:scale-95 transition select-none touch-manipulation">+</button>
+          <button id="rd-minus" type="button" aria-label="Zählerstand um 0,1 verringern" class="flex-1 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-2xl font-semibold leading-none active:scale-95 transition select-none touch-manipulation">−</button>
+        </div>
       </div>
       <p id="reading-calc" class="text-sm text-sm text-slate-500 dark:text-slate-400 text-right mt-2 min-h-[1.25rem]"></p>
     </div>
@@ -229,6 +248,12 @@
         <input id="set-battery" type="text" inputmode="decimal" placeholder="52"
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
         <p class="text-xs text-slate-500 mt-1">Grundlage für die Ladeverlust-Berechnung. Rückwirkend wirksam, da die Werte immer neu berechnet werden.</p>
+      </div>
+      <div>
+        <label for="set-power" class="text-sm text-slate-500 dark:text-slate-400">Ladeleistung in kW</label>
+        <input id="set-power" type="text" inputmode="decimal" placeholder="7"
+               class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <p class="text-xs text-slate-500 mt-1">Leistung am Zähler, mit der die Live-Simulation zwischen den Abgleichen rechnet und die Ladedauer berechnet wird.</p>
       </div>
       <div>
         <label for="set-key" class="text-sm text-slate-500 dark:text-slate-400">App-PIN</label>
@@ -353,7 +378,20 @@ function paintBatt() {
 }
 function paintCapture() { paintReading(); paintBatt(); }
 
-$('reading-input').addEventListener('input', paintReading);
+$('reading-input').addEventListener('input', e => { delete e.target.dataset.live; paintReading(); });
+function nudgeReading(delta) {                                           // Zählerstand in 0,1-Schritten korrigieren
+  const raw = $('reading-input').value, v = parseNum(raw), last = getReadings().slice(-1)[0];
+  const base = raw.trim() !== '' && isFinite(v) ? v : (last ? last.totalReading : 0);
+  $('reading-input').value = Math.max(0, Math.round((base + delta) * 10) / 10).toFixed(1);
+  delete $('reading-input').dataset.live; paintReading();
+}
+[['rd-plus', 0.1], ['rd-minus', -0.1]].forEach(([id, delta]) => {        // Antippen = 0,1; gedrückt halten = schneller Lauf
+  const btn = $(id); let t1 = null, t2 = null;
+  const stop = () => { clearTimeout(t1); clearInterval(t2); };
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); nudgeReading(delta); t1 = setTimeout(() => { t2 = setInterval(() => nudgeReading(delta), 110); }, 450); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+});
 $('rg0').addEventListener('input', e => {
   const v = +e.target.value, f1 = $('soc1-input'); $('soc0-input').value = v; delete $('soc0-input').dataset.live;
   if (f1.value !== '' && +f1.value <= v) f1.value = Math.min(100, v + 1);
@@ -384,10 +422,11 @@ function updateCaptureDefaults() {
   const live = getLive();                                // laufende/beendete Live-Ladung: Felder vorbelegen (Zählerstand bitte gegenlesen)
   if (live?.kwhTarget != null) {
     const kwh = liveKwh(live);
-    if ($('soc0-input').value === '') $('soc0-input').value = live.socStart;
-    if (['', '80'].includes($('soc1-input').value)) $('soc1-input').value = kwh >= live.kwhTarget ? live.socTarget : Math.floor(live.socStart + kwh * live.eff / live.battery * 100);   // fertig = Ziel-%
+    const done = kwh >= live.kwhTarget;
+    if ($('soc0-input').value === '') { $('soc0-input').value = live.socStart; $('soc0-input').dataset.live = '1'; }
+    if (['', '80'].includes($('soc1-input').value) || $('soc1-input').dataset.live) { $('soc1-input').value = done ? live.socTarget : Math.floor(live.socStart + kwh * live.eff / live.battery * 100); $('soc1-input').dataset.live = '1'; }   // fertig = Ziel-%
     if (live.odometerKm != null && $('km-input').value === '') { $('km-input').value = Math.round(live.odometerKm); $('km-input').dataset.live = '1'; }                              // km-Stand beim Live-Start
-    if ($('reading-input').value === '') $('reading-input').value = (live.baseReading + kwh).toFixed(1);
+    if (done && $('reading-input').value === '') { $('reading-input').value = (live.baseReading + kwh).toFixed(1); $('reading-input').dataset.live = '1'; }   // erst nach Erreichen des Ziels (inkl. Ladeverluste), weiter editierbar
   }
   paintCapture(); paintOdo(true);                        // Anzeige (Segmente, Trommeln, Akku) an die Feldwerte angleichen
 }
@@ -578,7 +617,7 @@ $('btn-save').addEventListener('click', () => {
     else if (s.startsWith('error:')) flash($('save-msg'), msg + ' · Cloud-Fehler: ' + s.slice(6), false);
   });
   $('save-msg').classList.remove('hidden');
-  $('reading-input').value = ''; ['km-input', 'soc0-input', 'soc1-input'].forEach(id => { $(id).value = ''; delete $(id).dataset.live; }); updateCaptureDefaults();
+  $('reading-input').value = ''; ['reading-input', 'km-input', 'soc0-input', 'soc1-input'].forEach(id => { $(id).value = ''; delete $(id).dataset.live; }); updateCaptureDefaults();
 });
 
 /* =====================================================================
@@ -590,13 +629,16 @@ function fillSettings() {
   $('set-key').value = s.pin;
   $('set-battery').value = String(batteryKwh()).replace('.', ',');
   $('set-keyexp').value = keyExpiry();
+  $('set-power').value = String(chargePowerKw()).replace('.', ',');
 }
 $('btn-save-settings').addEventListener('click', () => {
   const price = parseNum($('set-price').value);
   if (!isFinite(price) || price < 0) { alert('Bitte einen gültigen Strompreis eingeben (z. B. 0,307).'); return; }
   const battery = parseNum($('set-battery').value);
   if (!isFinite(battery) || battery < 10 || battery > 200) { alert('Bitte eine gültige Nettokapazität in kWh eingeben (z. B. 52).'); return; }
-  if (save(KEY_SETTINGS, { price, battery, keyExpiry: $('set-keyexp').value || DEFAULT_KEY_EXPIRY, pin: $('set-key').value.trim() })) {
+  const power = parseNum($('set-power').value);
+  if (!isFinite(power) || power < 0.5 || power > 50) { alert('Bitte eine gültige Ladeleistung in kW eingeben (z. B. 7).'); return; }
+  if (save(KEY_SETTINGS, { price, battery, power, keyExpiry: $('set-keyexp').value || DEFAULT_KEY_EXPIRY, pin: $('set-key').value.trim() })) {
     $('settings-msg').classList.remove('hidden'); setTimeout(() => $('settings-msg').classList.add('hidden'), 2500);
   }
 });
@@ -680,7 +722,9 @@ function renderChart() {
    Gespeichert wird nur ein Zeitstempel: { startedAt, baseReading, price }.
    Alle Live-Werte werden daraus berechnet -> stimmen auch nach Neuladen/Schließen der App.
    ===================================================================== */
-const CHARGE_POWER_KW = 7;       // Ladeleistung des Enyaq (fest hinterlegt)
+const DEFAULT_CHARGE_POWER_KW = 7;                         // Standardwert; einstellbar unter Einstellungen
+const chargePowerKw = () => { const v = Number(getSettings().power); return v > 0 ? v : DEFAULT_CHARGE_POWER_KW; };
+const LIVE_POLL_MS = 6 * 60 * 1000;                        // Abgleich mit dem Auto alle 6 Minuten (Škoda-Limit: 20 Anfragen/Stunde)
 const LIVE_SPEED = 1;            // 1 = Echtzeit. Zum Testen z. B. 60 setzen (1 Minute entspricht 1 Stunde Laden)
 const KEY_LIVE = 'enyaq.live';
 let liveTimer = null;
@@ -692,8 +736,9 @@ const pad2 = (n) => String(n).padStart(2, '0');
 const hhmm = (ms) => { const t = new Date(ms); return pad2(t.getHours()) + ':' + pad2(t.getMinutes()); };
 const fmtHM = (sec) => Math.floor(sec / 3600) + ':' + pad2(Math.floor(sec % 3600 / 60));
 /** Bisher geladene kWh am Zähler; bei gesetztem Ziel am Zielwert gedeckelt. */
-const liveKwh = (live) => {
-  const raw = Math.max(0, (Date.now() - live.startedAt) / 3600000 * LIVE_SPEED) * CHARGE_POWER_KW;
+const livePower = (live) => live.power ?? chargePowerKw();            // beim Start eingefrorene Ladeleistung
+const liveKwh = (live, now = Date.now()) => {                         // Anker (Zeit, kWh) + Leistung x Zeit seit dem Anker
+  const raw = (live.anchorKwh ?? 0) + Math.max(0, now - (live.anchorT ?? live.startedAt)) / 3600000 * LIVE_SPEED * livePower(live);
   return live.kwhTarget != null ? Math.min(raw, live.kwhTarget) : raw;
 };
 /** Ladewirkungsgrad aus der Historie (gespeicherte Energie / Zählerenergie); ohne Daten Standardwert 90 %. */
@@ -705,12 +750,14 @@ function chargeEfficiency() {
 /** Prognose für Start- und Ziel-%: Zähler-kWh = Batterieenergie / Wirkungsgrad; Dauer = kWh / 7 kW. */
 function liveForecast(s0, s1) {
   const { eff, hist } = chargeEfficiency(), kwh = (s1 - s0) / 100 * batteryKwh() / eff;
-  return { kwh, eff, hist, hours: kwh / CHARGE_POWER_KW, cost: kwh * getSettings().price };
+  return { kwh, eff, hist, hours: kwh / chargePowerKw(), cost: kwh * getSettings().price };
 }
 
 function renderLive() {
   const live = getLive(), on = !!live, hasT = on && live.kwhTarget != null;
   const kwh = on ? liveKwh(live) : 0, done = hasT && kwh >= live.kwhTarget, charging = on && !done;
+  if (charging && hasT && !document.hidden && Date.now() - (live.lastPollAt ?? live.startedAt) >= LIVE_POLL_MS) pollLive();   // alle 6 Minuten mit dem Auto abgleichen
+  $('live-sync').textContent = hasT ? (live.syncNote || '') : '';
   const btn = $('btn-live');
   btn.classList.toggle('animate-pulse', charging);                                               // Button pulsiert nur während der Ladung
   ['bg-red-600', 'text-white'].forEach(c => btn.classList.toggle(c, on));
@@ -718,11 +765,11 @@ function renderLive() {
   $('live-dot').classList.toggle('bg-white', on); $('live-dot').classList.toggle('bg-slate-400', !on);
   $('phase-leds').classList.toggle('live-on', charging);
   $('live-battery').classList.toggle('hidden', !hasT);
-  $('dash-title').textContent = !on ? 'Aktueller Zählerstand' : done ? 'Ladung abgeschlossen' : 'Live-Simulation · ' + CHARGE_POWER_KW + ' kW';
+  $('dash-title').textContent = !on ? 'Aktueller Zählerstand' : done ? 'Ladung abgeschlossen' : 'Live-Simulation · ' + livePower(live) + ' kW';
   $('live-info').classList.toggle('hidden', !on);
   if (!on) return;
 
-  const finishAt = hasT ? live.startedAt + live.kwhTarget / CHARGE_POWER_KW * 3600000 / LIVE_SPEED : null;
+  const finishAt = hasT ? (live.anchorT ?? live.startedAt) + (live.kwhTarget - (live.anchorKwh ?? 0)) / livePower(live) * 3600000 / LIVE_SPEED : null;
   const elapsedMs = (done ? finishAt : Date.now()) - live.startedAt;
   $('dash-reading').textContent = (live.baseReading + kwh).toFixed(1).padStart(8, '0');
   $('dash-last-cost').textContent = eur(kwh * live.price);                                       // Kosten = kWh x Preis
@@ -742,16 +789,51 @@ function renderLive() {
 function tickLive() { renderLive(); if (!liveTimer) liveTimer = setInterval(renderLive, 1000); }
 
 function startLive(socStart, socTarget, odometerKm = null) {
-  const readings = getReadings(), last = readings[readings.length - 1], f = liveForecast(socStart, socTarget);
-  const state = { startedAt: Date.now(), baseReading: last ? last.totalReading : 0, price: getSettings().price,
+  const t0 = Date.now(), readings = getReadings(), last = readings[readings.length - 1], f = liveForecast(socStart, socTarget);
+  const state = { startedAt: t0, power: chargePowerKw(), anchorT: t0, anchorKwh: 0, lastPollAt: t0, syncNote: '',
+                  lastCaptured: carData?.capturedAt ? (new Date(carData.capturedAt).getTime() || 0) : 0, baseReading: last ? last.totalReading : 0, price: getSettings().price,
                   socStart, socTarget, odometerKm, kwhTarget: f.kwh, eff: f.eff, battery: batteryKwh() };       // alles Nötige beim Start einfrieren
   if (save(KEY_LIVE, state)) { $('live-setup').classList.add('hidden'); tickLive(); }
+}
+/** Korrigiert die Simulation mit echten Autodaten. Der Ladestand ist ganzzahlig: liegt die Simulation innerhalb [Soc, Soc+1) bleibt sie unverändert. */
+function applyCarSync(live, d, now) {
+  if (d.soc == null) { live.syncNote = 'Abgleich ' + hhmm(now) + ' Uhr: Auto meldet keinen Ladestand'; return; }
+  const parsed = d.capturedAt ? new Date(d.capturedAt).getTime() : NaN, tc = isFinite(parsed) ? parsed : now;
+  if (tc <= (live.lastCaptured || 0)) { live.syncNote = 'Abgleich ' + hhmm(now) + ' Uhr: keine neuen Daten vom Auto (Stand ' + hhmm(tc) + ')'; return; }
+  if (now - tc > 20 * 60000) { live.syncNote = 'Abgleich ' + hhmm(now) + ' Uhr: Autodaten veraltet (Stand ' + hhmm(tc) + ')'; return; }
+  live.lastCaptured = tc;
+  const kwhAt = liveKwh(live, tc);                                        // Simulation zum Zeitpunkt der Autodaten
+  const socSim = live.socStart + kwhAt * live.eff / live.battery * 100, r = d.soc;
+  const toKwh = (soc) => (soc - live.socStart) / 100 * live.battery / live.eff;     // Akku-% -> Zähler-kWh (inkl. Ladeverluste)
+  let kwhNew = kwhAt, corrected = false;
+  if (socSim < r) { kwhNew = toKwh(r); corrected = true; }
+  else if (socSim >= r + 1) { kwhNew = toKwh(r + 0.99); corrected = true; }
+  live.anchorT = tc; live.anchorKwh = Math.min(live.kwhTarget, Math.max(0, kwhNew));
+  live.syncNote = 'Abgleich ' + hhmm(now) + ' Uhr: Auto ' + r + ' %' + (d.chargePowerKw != null ? ', ' + fmt(d.chargePowerKw, 1) + ' kW' : '') + (corrected ? ' · Simulation angepasst' : ' · passt');
+}
+let livePolling = false;
+async function pollLive() {
+  const live = getLive(), pin = getSettings().pin;
+  if (!live || live.kwhTarget == null || livePolling) return;
+  livePolling = true;
+  const now = Date.now();
+  try {
+    if (!pin) throw new Error('PIN fehlt');
+    const res = await fetch('/api/vehicle', { headers: { 'x-app-pin': pin } });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
+    applyCarSync(live, d, now);
+  } catch (e) { live.syncNote = 'Abgleich ' + hhmm(now) + ' Uhr fehlgeschlagen (' + e.message + ') – Simulation läuft weiter'; }
+  live.lastPollAt = now;                                                  // auch bei Fehlern: erst in 6 Minuten erneut versuchen
+  const cur = getLive();
+  if (cur && cur.startedAt === live.startedAt) save(KEY_LIVE, live);      // nur speichern, wenn die Live-Ladung nicht inzwischen beendet wurde
+  livePolling = false; renderLive();
 }
 function stopLive(refresh = true) {
   localStorage.removeItem(KEY_LIVE);
   clearInterval(liveTimer); liveTimer = null;
   if (refresh) {
-    ['km-input', 'soc0-input'].forEach(id => { if ($(id).dataset.live) { $(id).value = ''; delete $(id).dataset.live; } });   // nur vom Auto übernommene Werte
+    ['reading-input', 'km-input', 'soc0-input', 'soc1-input'].forEach(id => { if ($(id).dataset.live) { $(id).value = ''; delete $(id).dataset.live; } });   // nur vom Auto übernommene Werte
     updateCaptureDefaults();
     renderDashboard();                                  // alten Zählerstand und echte Werte wieder anzeigen
   }
@@ -857,6 +939,56 @@ function renderEfficiency() {                            // gewichteter Durchsch
                                               : 'Erfasse km-Stand und Akku-% bei den Ladungen, um Werte zu sehen.';
 }
 
+/* =====================================================================
+   Ladeverluste im Jahresverlauf: Zähler-kWh minus in der Batterie angekommene kWh (aus Akku-Start/-Ende x Nettokapazität).
+   Pro Monat aufsummiert; Sommer = Apr–Sep, Winter = Okt–Mär. Ladungen ohne Akku-Start/-Ende fließen nicht ein.
+   ===================================================================== */
+let lossChart = null;
+function renderLossChart() {
+  const rs = getReadings(), byMonth = {}, season = { summer: { chg: 0, st: 0 }, winter: { chg: 0, st: 0 } };
+  let chgAll = 0, stAll = 0, lossCost = 0, n = 0;
+  rs.forEach((r, i) => {
+    const s = entryStats(rs, i); if (s.stored === undefined) return;       // nur Ladungen mit Start-/Ende-% und kWh
+    const d = new Date(r.date), key = d.getFullYear() + '-' + d.getMonth(), m = (byMonth[key] = byMonth[key] || { chg: 0, st: 0 });
+    m.chg += r.consumedSinceLast; m.st += s.stored;
+    const sea = d.getMonth() >= 3 && d.getMonth() <= 8 ? season.summer : season.winter;
+    sea.chg += r.consumedSinceLast; sea.st += s.stored;
+    chgAll += r.consumedSinceLast; stAll += s.stored; n++;
+    lossCost += (r.consumedSinceLast - s.stored) * (r.cost / r.consumedSinceLast);           // Verlust-kWh x Preis dieser Ladung
+  });
+  const pct = (o) => o.chg > 0 ? fmt(Math.max(0, (1 - o.st / o.chg) * 100), 1) + ' %' : '–';
+  $('loss-summer').textContent = pct(season.summer); $('loss-winter').textContent = pct(season.winter);
+  $('loss-cost').textContent = n ? eur(Math.max(0, lossCost)) : '–';
+
+  const now = new Date(), labels = [], kwh = [], perc = [];
+  for (let k = 11; k >= 0; k--) {                                          // letzte 12 Monate
+    const d = new Date(now.getFullYear(), now.getMonth() - k, 1), m = byMonth[d.getFullYear() + '-' + d.getMonth()];
+    labels.push(MONTHS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2));
+    kwh.push(m ? +Math.max(0, m.chg - m.st).toFixed(1) : null);
+    perc.push(m && m.chg > 0 ? +Math.max(0, (1 - m.st / m.chg) * 100).toFixed(1) : null);
+  }
+  const has = kwh.some(v => v != null);
+  $('loss-chart').parentElement.classList.toggle('hidden', !has); $('loss-empty').classList.toggle('hidden', has);
+  $('loss-note').textContent = n ? 'Basis: ' + n + ' Ladungen · Nettokapazität ' + batteryKwh() + ' kWh · enthält u. a. Batterieheizung und Wandlerverluste' : '';
+  if (lossChart) lossChart.destroy();
+  if (!has) return;
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches, text = dark ? '#cbd5e1' : '#475569', grid = dark ? 'rgba(148,163,184,.15)' : 'rgba(100,116,139,.15)';
+  lossChart = new Chart($('loss-chart'), {
+    data: { labels, datasets: [
+      { type: 'bar', label: 'Verlust (kWh)', data: kwh, backgroundColor: '#f59e0b', borderRadius: 6, yAxisID: 'y' },
+      { type: 'line', label: 'Verlust (%)', data: perc, borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', tension: .3, spanGaps: true, yAxisID: 'y1' }
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: text } } },
+      scales: {
+        x: { ticks: { color: text }, grid: { display: false } },
+        y: { beginAtZero: true, title: { display: true, text: 'kWh', color: text }, ticks: { color: text }, grid: { color: grid } },
+        y1: { beginAtZero: true, position: 'right', title: { display: true, text: '%', color: text }, ticks: { color: text }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+}
+
 function renderDashboard() {
   const readings = getReadings(), last = readings[readings.length - 1];
   $('dash-reading').textContent = (last ? last.totalReading : 0).toFixed(1).padStart(8, '0');   // 6 Stellen + Komma + 1 Nachkommastelle
@@ -867,6 +999,7 @@ function renderDashboard() {
   renderChart();
   renderStats();
   renderEfficiency();
+  renderLossChart();
   renderKeyWarning();
 }
 document.querySelectorAll('.range-btn').forEach(b => b.addEventListener('click', () => { range = b.dataset.range; renderChart(); }));
@@ -882,8 +1015,8 @@ const toLocalInput = (iso) => {                       // ISO-Datum -> Wert für 
   const d = new Date(iso), p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
-/** Ladedauer als hh:mm aus geladenen kWh und Ladeleistung (CHARGE_POWER_KW). */
-const fmtDuration = (kwh) => { const m = Math.round(kwh / CHARGE_POWER_KW * 60); return pad2(Math.floor(m / 60)) + ':' + pad2(m % 60); };
+/** Ladedauer als hh:mm aus geladenen kWh und Ladeleistung (chargePowerKw()). */
+const fmtDuration = (kwh) => { const m = Math.round(kwh / chargePowerKw() * 60); return pad2(Math.floor(m / 60)) + ':' + pad2(m % 60); };
 const unitPriceOf = (r) => r.consumedSinceLast > 0 ? r.cost / r.consumedSinceLast : getSettings().price;
 const cell = (i, f) => $('history-list').querySelector(`li[data-idx="${i}"] [data-f="${f}"]`);
 
@@ -956,7 +1089,7 @@ function renderHistory() {
         <span class="text-lg font-semibold">${oldVal === null ? '–' : eur(r.cost)}</span>
       </div>
       <div class="flex justify-between items-baseline mt-2">
-        <span class="text-sm text-slate-500 dark:text-slate-400">Ladedauer <span class="text-xs">(bei ${CHARGE_POWER_KW} kW)</span></span>
+        <span class="text-sm text-slate-500 dark:text-slate-400">Ladedauer <span class="text-xs">(bei ${chargePowerKw()} kW)</span></span>
         <span class="text-lg font-semibold">${oldVal === null ? '–' : fmtDuration(r.consumedSinceLast) + ' h'}</span>
       </div>${extra}
     </li>`;
@@ -1057,7 +1190,7 @@ $('btn-export').addEventListener('click', () => {
   const readings = getReadings();
   if (!readings.length) { flash($('io-msg'), 'Keine Daten zum Exportieren vorhanden.', false); return; }
   const payload = {
-    app: EXPORT_APP_ID, version: 1, exportedAt: new Date().toISOString(), chargePowerKw: CHARGE_POWER_KW,
+    app: EXPORT_APP_ID, version: 1, exportedAt: new Date().toISOString(), chargePowerKw: chargePowerKw(),
     readings: readings.map(r => ({ ...r, chargeDuration: fmtDuration(r.consumedSinceLast) }))      // Ladedauer als hh:mm
   };
   const a = document.createElement('a');
