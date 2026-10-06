@@ -30,6 +30,10 @@
   .live-on .phase-led.l3 { animation-delay: .5s; }
   @keyframes ledpulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { .live-on .phase-led { animation: none; opacity: 1; } }
+  .odo-drum { width: 2.1rem; height: 3.1rem; background: #1c1c1c; border: 1px solid #444; border-radius: 4px; overflow: hidden; position: relative; }
+  .odo-col { position: absolute; left: 0; right: 0; top: 0; transition: transform 1.4s cubic-bezier(.2, .8, .2, 1); }
+  .odo-col div { height: 3.1rem; line-height: 3.1rem; text-align: center; font-size: 1.8rem; font-weight: 500; color: #f1efe8; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .odo-dim { opacity: .45; }
   .spinner { width:22px;height:22px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -131,18 +135,48 @@
   <section id="view-capture" class="view hidden space-y-4">
     <h1 class="text-xl font-semibold">Zählerstand erfassen</h1>
 
-    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 space-y-3">
-      <label for="reading-input" class="text-sm text-slate-500 dark:text-slate-400">Zählerstand in kWh</label>
-      <input id="reading-input" type="text" inputmode="decimal" placeholder="z. B. 18.7"
-             class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 text-2xl lcd-input focus:outline-none focus:ring-2 focus:ring-emerald-500">
-      <div class="grid grid-cols-3 gap-2">
-        <div><label for="km-input" class="text-xs text-slate-500 dark:text-slate-400">km-Stand</label><input id="km-input" type="text" inputmode="decimal" placeholder="optional" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
-        <div><label for="soc0-input" class="text-xs text-slate-500 dark:text-slate-400">Akku Start %</label><input id="soc0-input" type="text" inputmode="decimal" placeholder="optional" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
-        <div><label for="soc1-input" class="text-xs text-slate-500 dark:text-slate-400">Akku Ende %</label><input id="soc1-input" type="text" inputmode="decimal" placeholder="optional" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+      <p class="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Zählerstand</span><span>kWh</span></p>
+      <div id="seg2-box" class="lcd relative rounded-xl px-3 py-4 flex items-end justify-end gap-2 focus-within:ring-2 focus-within:ring-emerald-500">
+        <span id="seg2-wrap" class="seg-wrap seg"><span class="seg-ghost">888888.8</span><span id="seg2-on" class="seg-on"></span></span>
+        <span id="seg2-unit" class="text-sm pb-1">kWh</span>
+        <input id="reading-input" type="text" inputmode="decimal" autocomplete="off" aria-label="Zählerstand in kWh" class="absolute inset-0 w-full h-full opacity-0 cursor-text">
       </div>
-      <button id="btn-save" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Speichern</button>
-      <p id="save-msg" class="hidden text-sm"></p>
+      <p id="reading-calc" class="text-sm text-sm text-slate-500 dark:text-slate-400 text-right mt-2 min-h-[1.25rem]"></p>
     </div>
+
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+      <p class="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Kilometerstand</span><span>vom Auto</span></p>
+      <div id="odo" class="flex justify-center gap-1"></div>
+      <input id="km-input" type="hidden">
+      <div class="flex justify-between items-center gap-2 mt-3">
+        <span id="odo-info" class="text-xs text-slate-500 dark:text-slate-400"></span>
+        <button id="btn-odo" class="shrink-0 text-sm px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Vom Auto laden</button>
+      </div>
+    </div>
+
+    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+      <p class="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-3"><span>Akku</span><span id="batt-add"></span></p>
+      <div class="relative mr-2.5">
+        <div class="relative h-11 rounded-lg border-2 border-slate-400 dark:border-slate-500 overflow-hidden bg-slate-100 dark:bg-slate-800">
+          <div id="bt-a" class="absolute top-0 bottom-0 left-0" style="background:#1D9E75"></div>
+          <div id="bt-b" class="absolute top-0 bottom-0" style="background:#B4B2A9"></div>
+        </div>
+        <div class="absolute -right-2 top-3.5 w-1.5 h-4 rounded-r bg-slate-400 dark:bg-slate-500"></div>
+      </div>
+      <div class="relative h-5 mt-1.5 mr-2.5 text-sm font-semibold">
+        <span id="bt-l0" class="absolute -translate-x-1/2 text-emerald-600 dark:text-emerald-400"></span>
+        <span id="bt-l1" class="absolute -translate-x-1/2"></span>
+      </div>
+      <div class="grid grid-cols-[3rem_1fr] gap-x-2 gap-y-2 items-center mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <span>Start</span><input id="rg0" type="range" min="0" max="100" step="1" class="w-full accent-emerald-500">
+        <span>Ende</span><input id="rg1" type="range" min="0" max="100" step="1" class="w-full accent-emerald-500">
+      </div>
+      <input id="soc0-input" type="hidden"><input id="soc1-input" type="hidden">
+    </div>
+
+    <button id="btn-save" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Speichern</button>
+    <p id="save-msg" class="hidden text-sm"></p>
 
     <div id="scan-card" class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 space-y-3">
       <div class="relative rounded-2xl overflow-hidden bg-black aspect-[3/4]">
@@ -271,6 +305,78 @@ const getReadings = () => load(KEY_READINGS, []);
 const DEFAULT_BATTERY_KWH = 52;   // Standardwert (nutzbare Kapazität Enyaq iV 50); einstellbar unter Einstellungen
 const batteryKwh = () => { const v = Number(getSettings().battery); return v > 0 ? v : DEFAULT_BATTERY_KWH; };
 /** Vorbelegung: letzter bekannter km-Stand als grauer Hinweis (Platzhalter), Akku Ende standardmäßig 80 %. */
+/* =====================================================================
+   Erfassen-Optik: editierbare Segmentanzeige, Trommel-Kilometerzähler, Akku mit zwei Reglern.
+   Die versteckten Felder km-Input, soc0-input und soc1-input bleiben die Datenquelle für das Speichern.
+   ===================================================================== */
+const odoCols = [];
+(function buildOdo() {
+  for (let i = 0; i < 6; i++) {
+    const drum = document.createElement('div'), col = document.createElement('div');
+    drum.className = 'odo-drum'; col.className = 'odo-col';
+    col.innerHTML = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => '<div>' + n + '</div>').join('');
+    drum.appendChild(col); $('odo').appendChild(drum); odoCols.push(col);
+  }
+})();
+
+/** Trommeln auf den km-Stand drehen (reset = erst auf 0 zurücksetzen, damit die Drehung sichtbar wird). */
+function paintOdo(reset) {
+  const kmVal = optNum($('km-input').value), fromCar = kmVal != null && isFinite(kmVal);
+  const withKm = getReadings().filter(r => r.odometerKm != null), last = withKm[withKm.length - 1];
+  const shown = fromCar ? kmVal : (last ? last.odometerKm : 0);
+  $('odo').classList.toggle('odo-dim', !fromCar);
+  $('odo-info').textContent = fromCar ? 'Stand vom Auto – wird mitgespeichert' : (last ? 'Letzter bekannter Stand – wird nicht gespeichert' : 'Kein Stand vorhanden – wird nicht gespeichert');
+  if (reset) { odoCols.forEach(c => { c.style.transition = 'none'; c.style.transform = 'translateY(0)'; }); void $('odo').offsetWidth; }
+  const t = String(Math.min(999999, Math.max(0, Math.round(shown)))).padStart(6, '0');
+  odoCols.forEach((c, i) => { c.style.transition = ''; c.style.transitionDelay = (i * 90) + 'ms'; c.style.transform = 'translateY(calc(-3.1rem * ' + t[i] + '))'; });
+}
+
+function paintReading() {
+  const raw = $('reading-input').value, v = parseNum(raw), ok = raw.trim() !== '' && isFinite(v) && v >= 0;
+  $('seg2-on').textContent = ok ? Math.min(v, 999999.9).toFixed(1).padStart(8, '0') : '';       // wie im Dashboard; leer = nur Geistersegmente
+  const last = getReadings().slice(-1)[0], calc = $('reading-calc');
+  const kwh = ok && last ? Math.round((v - last.totalReading) * 10) / 10 : null;
+  calc.className = 'text-sm text-right mt-2 min-h-[1.25rem] ' + (kwh != null && kwh < 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400');
+  calc.textContent = kwh == null ? (last ? 'Letzter Stand: ' + fmt(last.totalReading) + ' kWh' : '')
+    : kwh >= 0 ? '+' + fmt(kwh) + ' kWh seit letztem Eintrag · ' + eur(kwh * getSettings().price) : 'Kleiner als der letzte Stand (' + fmt(last.totalReading) + ')';
+}
+
+function paintBatt() {
+  const n0 = optNum($('soc0-input').value), n1 = optNum($('soc1-input').value);
+  const has0 = n0 != null && isFinite(n0), has1 = n1 != null && isFinite(n1), a = has0 ? n0 : 0, b = has1 ? n1 : a;
+  $('rg0').value = a; $('rg1').value = has1 ? n1 : 0;
+  $('bt-a').style.width = a + '%';                                         // grün: vorhandener Ladestand
+  $('bt-b').style.left = a + '%'; $('bt-b').style.width = Math.max(0, b - a) + '%';   // grau: hinzukommende Ladung
+  const place = (id, pct, txt) => { const el = $(id); el.textContent = txt; el.style.left = Math.min(94, Math.max(6, pct)) + '%'; };
+  place('bt-l0', a, has0 ? a + ' %' : '–'); place('bt-l1', Math.max(b, a + 14), has1 ? b + ' %' : '–');
+  $('batt-add').textContent = has0 && has1 && b > a ? '+' + (b - a) + ' % ≈ ' + fmt((b - a) / 100 * batteryKwh(), 1) + ' kWh in der Batterie' : '';
+}
+function paintCapture() { paintReading(); paintBatt(); }
+
+$('reading-input').addEventListener('input', paintReading);
+$('rg0').addEventListener('input', e => {
+  const v = +e.target.value, f1 = $('soc1-input'); $('soc0-input').value = v; delete $('soc0-input').dataset.live;
+  if (f1.value !== '' && +f1.value <= v) f1.value = Math.min(100, v + 1);
+  paintBatt();
+});
+$('rg1').addEventListener('input', e => {
+  const v = +e.target.value, f0 = $('soc0-input'); $('soc1-input').value = v; delete $('soc1-input').dataset.live;
+  if (f0.value !== '' && +f0.value >= v) f0.value = Math.max(0, v - 1);
+  paintBatt();
+});
+$('btn-odo').addEventListener('click', async () => {                      // km-Stand direkt vom Škoda-Server holen
+  const pin = getSettings().pin, info = $('odo-info');
+  if (!pin) { info.textContent = 'Bitte zuerst die PIN in den Einstellungen eintragen.'; return; }
+  info.textContent = 'Lade …';
+  try {
+    const res = await fetch('/api/vehicle', { headers: { 'x-app-pin': pin } });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
+    if (d.odometerKm == null) throw new Error('Das Auto meldet keinen km-Stand');
+    $('km-input').value = Math.round(d.odometerKm); paintOdo(true);
+  } catch (e) { info.textContent = 'Nicht verfügbar: ' + e.message; }
+});
+
 function updateCaptureDefaults() {
   const withKm = getReadings().filter(r => r.odometerKm != null), last = withKm[withKm.length - 1];
   $('km-input').placeholder = last ? String(last.odometerKm) : 'optional';
@@ -283,6 +389,7 @@ function updateCaptureDefaults() {
     if (live.odometerKm != null && $('km-input').value === '') $('km-input').value = Math.round(live.odometerKm);                              // km-Stand beim Live-Start
     if ($('reading-input').value === '') $('reading-input').value = (live.baseReading + kwh).toFixed(1);
   }
+  paintCapture(); paintOdo(true);                        // Anzeige (Segmente, Trommeln, Akku) an die Feldwerte angleichen
 }
 const optNum = (s) => String(s).trim() === '' ? null : parseNum(s);      // leer -> null, ungültig -> NaN
 
@@ -341,7 +448,7 @@ function showView(name) {
   if (name === 'settings') fillSettings();
   if (name !== 'history' && editMode) setEditMode(false);
   if (name === 'history') renderHistory();
-  if (name === 'dashboard') fitSeg();
+  fitSeg();
 }
 document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
 
@@ -423,6 +530,7 @@ $('btn-ocr').addEventListener('click', async () => {
     const match = text.replace(',', '.').match(/\d+(\.\d+)?/);
     if (!match) throw new Error('Keine Zahl erkannt (Antwort: „' + text.slice(0, 40) + '“). Bitte neues Foto aufnehmen oder manuell eingeben.');
     $('reading-input').value = parseFloat(match[0]).toFixed(1);   // eine Nachkommastelle
+    paintReading();
   } catch (err) {
     console.error(err);
     showOcrError('KI-Auslesen fehlgeschlagen: ' + err.message);
@@ -913,14 +1021,16 @@ $('btn-edit-save').addEventListener('click', () => {
 /* =====================================================================
    7-Segment-Anzeige: Schriftgröße automatisch an die verfügbare Breite anpassen
    ===================================================================== */
-function fitSeg() {
-  const box = $('seg-box'), wrap = $('seg-wrap');
-  if (!box || !box.clientWidth) return;                  // View nicht sichtbar
-  const cs = getComputedStyle(box);
-  const avail = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - $('seg-unit').offsetWidth - 8;
-  wrap.style.fontSize = '100px';
-  const w = wrap.firstElementChild.getBoundingClientRect().width;     // Breite des "888888.8" bei 100 px
-  wrap.style.fontSize = Math.max(20, Math.min(56, Math.floor(100 * avail / w))) + 'px';
+function fitSeg() {                                       // Dashboard- und Erfassen-Anzeige jeweils an die Breite anpassen
+  [['seg-box', 'seg-wrap', 'seg-unit'], ['seg2-box', 'seg2-wrap', 'seg2-unit']].forEach(([bx, wr, un]) => {
+    const box = $(bx), wrap = $(wr);
+    if (!box || !box.clientWidth) return;                // View nicht sichtbar
+    const cs = getComputedStyle(box);
+    const avail = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - $(un).offsetWidth - 8;
+    wrap.style.fontSize = '100px';
+    const w = wrap.firstElementChild.getBoundingClientRect().width;     // Breite des "888888.8" bei 100 px
+    wrap.style.fontSize = Math.max(20, Math.min(56, Math.floor(100 * avail / w))) + 'px';
+  });
 }
 window.addEventListener('resize', fitSeg);
 if (document.fonts) document.fonts.ready.then(fitSeg);
