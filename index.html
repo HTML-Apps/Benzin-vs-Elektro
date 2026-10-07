@@ -262,18 +262,6 @@
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
         <p class="text-xs text-slate-500 mt-1">Leistung am Zähler, mit der die Live-Simulation zwischen den Abgleichen rechnet und die Ladedauer berechnet wird.</p>
       </div>
-      <div>
-        <label for="set-key" class="text-sm text-slate-500 dark:text-slate-400">App-PIN</label>
-        <input id="set-key" type="password" autocomplete="off" placeholder="PIN aus den Vercel-Variablen"
-               class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        <p class="text-xs text-slate-500 mt-1">Schützt deinen Server-Endpunkt. Der OpenAI-Key liegt ausschließlich bei Vercel, nicht in dieser App.</p>
-      </div>
-      <div>
-        <label for="set-keyexp" class="text-sm text-slate-500 dark:text-slate-400">Škoda-API-Schlüssel gültig bis</label>
-        <input id="set-keyexp" type="date"
-               class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        <p class="text-xs text-slate-500 mt-1">Die App erinnert 7 Tage vor Ablauf. Nach einem neuen Schlüssel: in Vercel ersetzen, neu deployen und hier das Datum anpassen (wird bei Live-Abrufen sonst automatisch übernommen).</p>
-      </div>
       <button id="btn-save-settings" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Einstellungen speichern</button>
       <p id="settings-msg" class="hidden text-sm text-emerald-700 dark:text-emerald-400">Gespeichert.</p>
     </div>
@@ -289,6 +277,7 @@
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 space-y-3">
       <p class="text-sm text-slate-500 dark:text-slate-400">Cloud-Sync (Firestore)</p>
       <p id="cloud-status" class="text-sm">Wird geladen …</p>
+      <p id="vehicle-status" class="text-sm text-slate-500 dark:text-slate-400"></p>
       <button id="btn-cloud" class="w-full py-3 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white font-medium active:scale-95 transition">Mit Google anmelden</button>
     </div>
     <button id="btn-wipe" class="w-full py-3 rounded-2xl border border-red-500 text-red-600 dark:text-red-400 font-medium active:scale-95 transition">Alle Daten löschen</button>
@@ -411,11 +400,11 @@ $('rg1').addEventListener('input', e => {
   paintBatt();
 });
 $('btn-odo').addEventListener('click', async () => {                      // km-Stand direkt vom Škoda-Server holen
-  const pin = getSettings().pin, info = $('odo-info');
-  if (!pin) { info.textContent = 'Bitte zuerst die PIN in den Einstellungen eintragen.'; return; }
+  const info = $('odo-info');
+  if (!apiEnabled()) { info.textContent = 'Für dieses Konto sind keine Fahrzeugdaten eingerichtet.'; return; }
   info.textContent = 'Lade …';
   try {
-    const res = await fetch('/api/vehicle', { headers: { 'x-app-pin': pin } });
+    const res = await fetch('/api/vehicle', { headers: await authHeaders() });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
     if (d.odometerKm == null) throw new Error('Das Auto meldet keinen km-Stand');
@@ -468,22 +457,46 @@ function commitReadings(next) {
     return 'error:' + (e.code || e.message);
   });
 }
-const DEFAULT_KEY_EXPIRY = '2027-04-03';                       // Ablauf des Škoda-API-Schlüssels (änderbar in den Einstellungen)
-const apiEnabled = () => !!String(getSettings().pin || '').trim();            // ohne PIN keine Škoda-Abfragen
+/* Škoda-Fahrzeugdaten: Ob für das angemeldete Konto ein Schlüssel hinterlegt ist, sagt der Server (SKODA_ACCOUNTS in Vercel). */
+const KEY_VEHICLE = 'enyaq.vehicle';
+let vehicle = load(KEY_VEHICLE, null) || { uid: null, ok: false, expires: null };   // zuletzt bekannter Stand (auch offline nutzbar)
+let vehicleChecked = false;
+const apiEnabled = () => !!vehicle.ok;
+const keyExpiry = () => vehicle.expires ? String(vehicle.expires).slice(0, 10) : null;
+async function authHeaders() {                                                      // Firebase-Token für /api/*
+  const t = await window.cloud?.token?.();
+  if (!t) throw new Error('nicht angemeldet');
+  return { Authorization: 'Bearer ' + t };
+}
+function renderVehicleStatus() {
+  const el = $('vehicle-status'); if (!el) return;
+  el.textContent = !window.cloud?.isSignedIn?.() ? '' : vehicle.ok
+    ? 'Fahrzeugdaten: verbunden' + (keyExpiry() ? ' · Schlüssel gültig bis ' + new Date(keyExpiry() + 'T12:00:00').toLocaleDateString('de-DE') : '')
+    : 'Fahrzeugdaten: für dieses Konto nicht eingerichtet (manuelle Eingabe)';
+}
+async function checkVehicle(uid) {                                                  // einmal nach der Anmeldung, ohne Škoda-Abfrage
+  if (vehicle.uid !== uid) vehicle = { uid, ok: false, expires: null };             // anderes Konto: nichts vom vorherigen übernehmen
+  try {
+    const res = await fetch('/api/vehicle?check=1', { headers: await authHeaders() });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok) vehicle = { uid, ok: !!d.enabled, expires: d.keyExpires || null };
+  } catch (e) { console.warn('Fahrzeug-Check fehlgeschlagen (offline?):', e.message); }   // dann bleibt der zuletzt bekannte Stand
+  save(KEY_VEHICLE, vehicle); renderVehicleStatus(); refreshViews(); paintOdo(false);
+}
 const DEFAULT_TITLE = 'Skoda Enyaq | Ladekosten NK';
 function applyTitle() { const t = getSettings().title || DEFAULT_TITLE; $('app-title').textContent = t; document.title = t; }
 function renderSetupHint() { $('setup-hint').classList.toggle('hidden', !!localStorage.getItem(KEY_SETTINGS)); }   // Hinweis, bis die Einstellungen einmal gespeichert wurden
-const keyExpiry = () => getSettings().keyExpiry || DEFAULT_KEY_EXPIRY;
 function renderKeyWarning() {                                   // Erinnerung ab 7 Tagen vor Ablauf, danach dauerhaft bis zur Erneuerung
-  const el = $('key-warn'), end = new Date(keyExpiry() + 'T23:59:59');
-  if (!apiEnabled()) { el.classList.add('hidden'); return; }               // ohne Škoda-Anbindung keine Schlüssel-Erinnerung
+  const el = $('key-warn'), ex = keyExpiry();
+  if (!apiEnabled() || !ex) { el.classList.add('hidden'); return; }         // ohne Fahrzeugzugang keine Schlüssel-Erinnerung
+  const end = new Date(ex + 'T23:59:59');
   const days = Math.ceil((end - Date.now()) / 86400000), date = end.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   el.classList.toggle('hidden', !(days <= 7));
   if (days > 7) return;
   const urgent = days <= 2;                                       // rot ab 2 Tagen vor Ablauf, davor gelb
   el.className = 'rounded-2xl p-3 text-sm ' + (urgent ? 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200' : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200');
   el.textContent = (days < 0 ? 'Der Škoda-API-Schlüssel ist seit ' + date + ' abgelaufen.' : days === 0 ? 'Der Škoda-API-Schlüssel läuft heute ab (' + date + ').' : 'Der Škoda-API-Schlüssel läuft in ' + days + (days === 1 ? ' Tag' : ' Tagen') + ' ab (' + date + ').')
-    + ' Neuen Schlüssel in der MyŠkoda-App erzeugen, in Vercel (SKODA_API_KEY) ersetzen, neu deployen und das Datum in den Einstellungen anpassen.';
+    + ' Neuen Schlüssel in der MyŠkoda-App erzeugen, in Vercel unter SKODA_ACCOUNTS (Schlüssel und Datum) ersetzen und neu deployen.';
 }
 const getSettings = () => ({ price: 0.35, pin: '', ...load(KEY_SETTINGS, {}) });
 
@@ -566,19 +579,18 @@ function showOcrError(msg) { const el = $('ocr-error'); el.textContent = msg; el
 
 $('btn-ocr').addEventListener('click', async () => {
   if (!photoDataUrl) return;
-  const pin = getSettings().pin;
-  if (!pin) { showOcrError('Bitte zuerst die App-PIN in den Einstellungen eintragen.'); return; }
+  if (!window.cloud?.isSignedIn?.()) { showOcrError('Bitte zuerst unter Einstellungen mit Google anmelden.'); return; }
 
   $('ocr-error').classList.add('hidden');
   $('btn-ocr').disabled = true; $('ocr-spinner').classList.remove('hidden'); $('ocr-label').textContent = 'Lese Zählerstand …';
   try {
     const res = await fetch(PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-app-pin': pin },
+      headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify({ image: photoDataUrl })
     });
     const data = await res.json().catch(() => ({}));
-    if (res.status === 401) throw new Error('PIN falsch.');
+    if (res.status === 401 || res.status === 403) throw new Error('Konto nicht berechtigt.');
     if (!res.ok) throw new Error(data.error?.message || data.error || ('HTTP ' + res.status));
     const text = data.choices?.[0]?.message?.content || '';
     const match = text.replace(',', '.').match(/\d+(\.\d+)?/);
@@ -642,9 +654,7 @@ $('btn-save').addEventListener('click', () => {
 function fillSettings() {
   const s = getSettings();
   $('set-price').value = String(s.price).replace('.', ',');
-  $('set-key').value = s.pin;
   $('set-battery').value = String(batteryKwh()).replace('.', ',');
-  $('set-keyexp').value = keyExpiry();
   $('set-title').value = s.title || DEFAULT_TITLE;
   $('set-power').value = String(chargePowerKw()).replace('.', ',');
 }
@@ -655,7 +665,7 @@ $('btn-save-settings').addEventListener('click', () => {
   if (!isFinite(battery) || battery < 10 || battery > 200) { alert('Bitte eine gültige Nettokapazität in kWh eingeben (z. B. 52).'); return; }
   const power = parseNum($('set-power').value);
   if (!isFinite(power) || power < 0.5 || power > 50) { alert('Bitte eine gültige Ladeleistung in kW eingeben (z. B. 7).'); return; }
-  if (save(KEY_SETTINGS, { title: $('set-title').value.trim() || DEFAULT_TITLE, price, battery, power, keyExpiry: $('set-keyexp').value || DEFAULT_KEY_EXPIRY, pin: $('set-key').value.trim() })) {
+  if (save(KEY_SETTINGS, { title: $('set-title').value.trim() || DEFAULT_TITLE, price, battery, power })) {
     $('settings-msg').classList.remove('hidden'); setTimeout(() => $('settings-msg').classList.add('hidden'), 2500);
   }
 });
@@ -830,13 +840,13 @@ function applyCarSync(live, d, now) {
 }
 let livePolling = false;
 async function pollLive() {
-  const live = getLive(), pin = getSettings().pin;
+  const live = getLive();
   if (!live || live.kwhTarget == null || livePolling) return;
   livePolling = true;
   const now = Date.now();
   try {
-    if (!pin) throw new Error('PIN fehlt');
-    const res = await fetch('/api/vehicle', { headers: { 'x-app-pin': pin } });
+    if (!apiEnabled()) throw new Error('keine Fahrzeugdaten eingerichtet');
+    const res = await fetch('/api/vehicle', { headers: await authHeaders() });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
     applyCarSync(live, d, now);
@@ -865,17 +875,17 @@ function updateLiveForecast() {
 /** Holt Akku-%, Ziel-% und km-Stand über die Vercel-Funktion /api/vehicle vom Škoda-Server und füllt das Live-Panel. */
 let carData = null;
 async function loadFromCar() {
-  const note = $('live-car-note'), pin = getSettings().pin;
+  const note = $('live-car-note');
   carData = null;
-  if (!pin) { note.textContent = 'Manuelle Eingabe (keine Fahrzeugdaten verbunden).'; return; }
+  if (!apiEnabled()) { note.textContent = 'Manuelle Eingabe (keine Fahrzeugdaten verbunden).'; return; }
   note.textContent = 'Lade Fahrzeugdaten …';
   try {
-    const res = await fetch('/api/vehicle', { headers: { 'x-app-pin': pin } });
+    const res = await fetch('/api/vehicle', { headers: await authHeaders() });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
     carData = d;
     const ex = d.keyExpiresAt ? new Date(d.keyExpiresAt) : null;                   // Ablaufdatum aus der Škoda-Antwort übernehmen
-    if (ex && !isNaN(ex) && ex.toISOString().slice(0, 10) !== keyExpiry()) save(KEY_SETTINGS, { ...getSettings(), keyExpiry: ex.toISOString().slice(0, 10) });
+    if (ex && !isNaN(ex) && ex.toISOString().slice(0, 10) !== keyExpiry()) { vehicle.expires = ex.toISOString().slice(0, 10); save(KEY_VEHICLE, vehicle); renderVehicleStatus(); }
     if (d.soc != null) { $('soc0-input').value = Math.round(d.soc); $('soc0-input').dataset.live = '1'; }               // Erfassen: Akku-Start = aktueller Ladestand des Autos
     if (d.odometerKm != null) { $('km-input').value = Math.round(d.odometerKm); $('km-input').dataset.live = '1'; }   // Erfassen: km-Trommeln
     paintBatt(); paintOdo(true);
@@ -1203,7 +1213,7 @@ if (document.fonts) document.fonts.ready.then(fitSeg);
    Dateiformat (JSON):
    { "app": "enyaq-ladekosten", "version": 1, "exportedAt": "<ISO-Datum>", "chargePowerKw": 7,
      "readings": [ { id, date, totalReading, consumedSinceLast, cost, chargeDuration ("hh:mm") }, … ] }
-   Die Felder "app" und "version" dienen dem Wiedererkennen beim Import. Einstellungen/PIN werden nicht exportiert.
+   Die Felder "app" und "version" dienen dem Wiedererkennen beim Import. Einstellungen werden nicht exportiert.
    "chargeDuration" ist ein abgeleiteter Wert (kWh / Ladeleistung): Er wird exportiert und beim Import geprüft,
    aber nicht gespeichert, sondern bei der Anzeige immer neu berechnet.
    ===================================================================== */
@@ -1270,7 +1280,7 @@ $('import-file').addEventListener('change', async (e) => {
 
 /* =====================================================================
    Cloud-Sync: Firestore ist die Quelle der Wahrheit, localStorage der schnelle Cache (auch offline).
-   Pfad: enyaqStrom/{uid}/readings/{id}. Einstellungen/PIN und Live-Daten bleiben bewusst lokal.
+   Pfad: enyaqStrom/{uid}/readings/{id}. Einstellungen und Live-Daten bleiben bewusst lokal.
    Das Firebase-Modul unten ruft diese beiden Funktionen auf.
    ===================================================================== */
 let deferredCloud = null, cloudEmail = null;
@@ -1304,6 +1314,8 @@ window.onCloudReadings = (cloud, isFirst, uid) => {
 };
 
 window.onCloudStatus = (s) => {
+  if (s === null) { vehicle = { uid: null, ok: false, expires: null }; vehicleChecked = false; save(KEY_VEHICLE, vehicle); renderVehicleStatus(); refreshViews(); }
+  else if (s.uid && !vehicleChecked) { vehicleChecked = true; checkVehicle(s.uid); }              // beim Start im Hintergrund prüfen
   const el = $('cloud-status'), btn = $('btn-cloud');
   if (!s?.error) cloudEmail = s?.email || null;
   if (s?.error) { el.textContent = 'Fehler: ' + s.error; el.className = 'text-sm text-red-600 dark:text-red-400'; }
@@ -1346,6 +1358,7 @@ const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost, r
 
 window.cloud = {
   isSignedIn: () => !!user,
+  token: () => user ? user.getIdToken() : Promise.resolve(null),       // Anmelde-Token für die Vercel-Funktionen
   login: () => signInWithPopup(auth, new GoogleAuthProvider()),
   logout: () => signOut(auth),
   /** Schreibt nur die Unterschiede zwischen prev und next (neu/geändert -> set, entfernt -> delete). */
