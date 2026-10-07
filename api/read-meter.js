@@ -1,15 +1,17 @@
 // Vercel Serverless Function: nimmt ein Foto entgegen, fragt OpenAI und gibt die Antwort zurück.
 // Benötigte Umgebungsvariablen (Vercel > Settings > Environment Variables):
-//   OPENAI_API_KEY  – Key eines eigenen OpenAI-Projekts mit Budget-Limit
-//   APP_PIN         – frei gewählte PIN, die du in der App einträgst
+//   OPENAI_API_KEY    – Key eines eigenen OpenAI-Projekts mit Budget-Limit
+//   SKODA_ACCOUNTS    – dieselbe Kontenliste wie bei api/vehicle.js; nur diese Konten dürfen die KI-Erkennung nutzen
+// Anmeldung per Firebase-Token (Header "Authorization: Bearer <Token>").
+import { verifyUser, accountFor } from '../lib/auth.js';
 
 const PROMPT = 'Dies ist ein Bild eines Stromzählers. Antworte ausschließlich mit der abgelesenen Zahl in kWh als reinen Zahlenwert (z.B. 1452.5). Keine weiteren Wörter.';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Nur POST erlaubt' });
-  if (!process.env.APP_PIN || req.headers['x-app-pin'] !== process.env.APP_PIN) {
-    return res.status(401).json({ error: 'Nicht autorisiert' });
-  }
+  const user = await verifyUser(req);
+  if (!user) return res.status(401).json({ error: 'Nicht angemeldet' });
+  if (!accountFor(user.email)) return res.status(403).json({ error: 'Konto nicht freigeschaltet' });
 
   const image = req.body?.image;
   if (typeof image !== 'string' || !image.startsWith('data:image/jpeg;base64,') || image.length > 3_000_000) {
