@@ -278,11 +278,22 @@
       <p class="text-sm text-slate-500 dark:text-slate-400">Cloud-Sync (Firestore)</p>
       <p id="cloud-status" class="text-sm">Wird geladen …</p>
       <p id="vehicle-status" class="text-sm text-slate-500 dark:text-slate-400"></p>
-      <button id="btn-cloud" class="w-full py-3 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white font-medium active:scale-95 transition">Mit Google anmelden</button>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btn-cloud" class="w-full px-2 py-3 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white text-sm font-medium active:scale-95 transition">Mit Google anmelden</button>
+        <button id="btn-help" class="w-full px-2 py-3 rounded-2xl bg-slate-200 dark:bg-slate-800 text-sm font-medium active:scale-95 transition">Anleitung</button>
+      </div>
     </div>
     <button id="btn-wipe" class="w-full py-3 rounded-2xl border border-red-500 text-red-600 dark:text-red-400 font-medium active:scale-95 transition">Alle Daten löschen</button>
   </section>
 </main>
+
+<div id="help-dialog" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-5 space-y-3">
+    <p class="font-semibold">SKODA-ACCOUNTS (Vercel):</p>
+    <pre class="select-all whitespace-pre-wrap break-all text-xs rounded-xl bg-slate-100 dark:bg-slate-800 p-3">{"junkerhendrik@googlemail.com":{"key":"DEIN_SCHLÜSSEL","vin":"DEINE_VIN","expires":"2027-04-03"}, "junkerthomas1@gmail.com":{"key":"…","vin":"…","expires":"JJJJ-MM-TT"}}</pre>
+    <button id="help-close" class="w-full py-3 rounded-2xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Schließen</button>
+  </div>
+</div>
 
 <!-- ============ BOTTOM NAVIGATION ============ -->
 <nav class="fixed bottom-0 inset-x-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-t border-slate-200 dark:border-slate-800"
@@ -1323,6 +1334,9 @@ window.onCloudStatus = (s) => {
   else { el.textContent = 'Nicht angemeldet – Daten nur auf diesem Gerät.'; el.className = 'text-sm text-slate-500 dark:text-slate-400'; }
   btn.textContent = cloudEmail ? 'Abmelden' : 'Mit Google anmelden';
 };
+$('btn-help').addEventListener('click', () => $('help-dialog').classList.remove('hidden'));
+$('help-close').addEventListener('click', () => $('help-dialog').classList.add('hidden'));
+$('help-dialog').addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden'); });   // Tippen neben das Fenster schließt
 $('btn-cloud').addEventListener('click', async () => {
   if (!window.cloud) { alert('Firebase konnte nicht geladen werden (offline?).'); return; }
   try { cloudEmail ? await window.cloud.logout() : await window.cloud.login(); }
