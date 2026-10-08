@@ -37,6 +37,17 @@
   .odo-dim { opacity: .75; }
   .spinner { width:22px;height:22px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  /* Bericht drucken / als PDF speichern */
+  @media print {
+    html, body { background: #fff !important; color: #111 !important; padding-top: 0 !important; }
+    nav, #setup-hint, #key-warn, #report-banner { display: none !important; }
+    .view:not(#view-report) { display: none !important; }
+    main { max-width: none !important; padding: 0 !important; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #view-report .rcard { background: #fff !important; box-shadow: none !important; border: 1px solid #cbd5e1; break-inside: avoid; }
+    #view-report .rtile { background: #f1f5f9 !important; }
+    #view-report .rcard * { color: #111 !important; }
+  }
 </style>
 </head>
 <body class="bg-black text-slate-100 min-h-screen">
@@ -48,6 +59,7 @@
     <h1 id="app-title" class="text-xl font-semibold">Skoda Enyaq | Ladekosten NK</h1>
     <div id="setup-hint" class="hidden rounded-2xl p-3 text-sm bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200">Willkommen! Trage unter „Einstellungen“ zuerst Strompreis, Nettokapazität der Batterie und Ladeleistung deines Autos ein, damit alle Berechnungen stimmen.</div>
     <div id="key-warn" class="hidden rounded-2xl p-3 text-sm"></div>
+    <button id="report-banner" type="button" class="hidden w-full text-left rounded-2xl p-3 text-sm bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 flex items-center justify-between gap-2 active:scale-95 transition"><span id="report-banner-text"></span><span aria-hidden="true">›</span></button>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <div class="flex items-center justify-between h-7 mb-2">
@@ -243,6 +255,74 @@
     <ul id="history-list" class="space-y-3"></ul>
   </section>
 
+  <!-- ============ VIEW: BERICHTE ============ -->
+  <section id="view-report" class="view hidden space-y-4">
+    <p id="rep-print-app" class="hidden print:block text-sm text-slate-500"></p>
+    <div class="flex items-center justify-between">
+      <button id="rep-prev" type="button" aria-label="Vorheriger Monat" class="print:invisible w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center active:scale-95 transition disabled:opacity-30"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <div class="text-center">
+        <h1 id="rep-title" class="text-xl font-semibold"></h1>
+        <p id="rep-sub" class="text-xs text-slate-500 dark:text-slate-400"></p>
+      </div>
+      <button id="rep-next" type="button" aria-label="Nächster Monat" class="print:invisible w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center active:scale-95 transition disabled:opacity-30"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+
+    <div id="rep-empty" class="hidden rcard rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-6 text-center">
+      <p class="font-medium">Keine Ladungen in diesem Monat</p>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Sobald du einen Zählerstand erfasst, erscheint hier der Bericht.</p>
+    </div>
+
+    <div id="rep-body" class="space-y-4">
+      <div class="rcard rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+        <p class="text-sm text-slate-500 dark:text-slate-400">Ladekosten im Monat</p>
+        <p class="mt-1 text-5xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400"><span id="rep-cost">0,00</span> <span class="text-3xl font-medium">€</span></p>
+        <p id="rep-delta" class="text-sm mt-2"></p>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2">
+        <div class="rcard rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-3"><p class="text-xs text-slate-500 dark:text-slate-400">Geladen</p><p id="rep-kwh" class="text-xl font-semibold">–</p><p class="text-xs text-slate-500 dark:text-slate-400">kWh</p></div>
+        <div class="rcard rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-3"><p class="text-xs text-slate-500 dark:text-slate-400">Ladungen</p><p id="rep-n" class="text-xl font-semibold">–</p><p id="rep-n-sub" class="text-xs text-slate-500 dark:text-slate-400">&nbsp;</p></div>
+        <div class="rcard rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-3"><p class="text-xs text-slate-500 dark:text-slate-400">Ø Preis</p><p id="rep-price" class="text-xl font-semibold">–</p><p class="text-xs text-slate-500 dark:text-slate-400">€/kWh</p></div>
+      </div>
+
+      <div class="rcard rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Verlauf nach Kalenderwoche (kWh)</p>
+        <div id="rep-weeks"></div>
+      </div>
+
+      <div class="rcard rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Effizienz</p>
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="rtile rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">kWh/100 km</p><p id="rep-kwh100" class="text-xl font-semibold text-emerald-700 dark:text-emerald-300">–</p></div>
+          <div class="rtile rounded-2xl bg-sky-50 dark:bg-sky-950/50 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">€/100 km</p><p id="rep-cost100" class="text-xl font-semibold text-sky-700 dark:text-sky-300">–</p></div>
+          <div class="rtile rounded-2xl bg-amber-50 dark:bg-amber-950/40 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">Ladeverlust</p><p id="rep-loss" class="text-xl font-semibold text-amber-700 dark:text-amber-300">–</p></div>
+        </div>
+        <p id="rep-eff-note" class="text-xs text-slate-500 dark:text-slate-400 mt-3"></p>
+      </div>
+
+      <div class="rcard rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">Vergleich</p>
+        <div id="rep-compare"></div>
+      </div>
+
+      <div class="rcard rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">Highlights</p>
+        <div id="rep-high"></div>
+      </div>
+
+      <div id="rep-hint" class="hidden rounded-2xl p-3 text-sm bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"></div>
+
+      <div id="rep-list" class="hidden print:block rcard rounded-3xl bg-white text-slate-900 shadow-sm p-4"></div>
+
+      <div class="print:hidden grid grid-cols-2 gap-2">
+        <button id="rep-img" type="button" class="py-3 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white text-sm font-medium active:scale-95 transition">Als Bild teilen</button>
+        <button id="rep-pdf" type="button" class="py-3 rounded-2xl bg-slate-200 dark:bg-slate-800 text-sm font-medium active:scale-95 transition">Als PDF speichern</button>
+      </div>
+      <p id="rep-msg" class="hidden text-sm"></p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 text-center">Verbrauch: Der km-Anteil einer Ladung ist die Differenz zum vorherigen Eintrag und kann im Vormonat beginnen. Zuordnung nach Ablesedatum.</p>
+    </div>
+  </section>
+
   <!-- ============ VIEW 3: EINSTELLUNGEN ============ -->
   <section id="view-settings" class="view hidden space-y-4">
     <h1 class="text-xl font-semibold">Einstellungen</h1>
@@ -253,21 +333,21 @@
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
       </div>
       <div>
-        <label for="set-price" class="text-sm text-slate-500 dark:text-slate-400">Strompreis in € pro kWh</label>
+        <label for="set-price" class="text-sm text-slate-500 dark:text-slate-400">Aktueller Strompreis [€/kWh]</label>
         <input id="set-price" type="text" inputmode="decimal" placeholder="0,307"
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
       </div>
       <div>
-        <label for="set-battery" class="text-sm text-slate-500 dark:text-slate-400">Nettokapazität der Batterie in kWh</label>
+        <label for="set-battery" class="text-sm text-slate-500 dark:text-slate-400">Aktuelle Nettokapazität der Batterie [kWh]</label>
         <input id="set-battery" type="text" inputmode="decimal" placeholder="52"
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        <p class="text-xs text-slate-500 mt-1">Gilt für neue Ladungen. Jede Ladung speichert die Kapazität, die zu ihrem Zeitpunkt galt, ältere Einträge ändern sich dadurch nicht (in der Historie änderbar, ältere Einträge ohne Wert rechnen mit 50 kWh).</p>
+        <p class="text-xs text-slate-500 mt-1">Jede Ladung speichert die Kapazität, die zu ihrem Zeitpunkt galt, ältere Einträge ändern sich dadurch nicht.</p>
       </div>
       <div>
-        <label for="set-power" class="text-sm text-slate-500 dark:text-slate-400">Ladeleistung in kW</label>
+        <label for="set-power" class="text-sm text-slate-500 dark:text-slate-400">Ladeleistung [kW]</label>
         <input id="set-power" type="text" inputmode="decimal" placeholder="7"
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        <p class="text-xs text-slate-500 mt-1">Leistung am Zähler, mit der die Live-Simulation zwischen den Abgleichen rechnet und die Ladedauer berechnet wird.</p>
+        <p class="text-xs text-slate-500 mt-1">Ladeleistung des Autos</p>
       </div>
       <button id="btn-save-settings" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Einstellungen speichern</button>
       <p id="settings-msg" class="hidden text-sm text-emerald-700 dark:text-emerald-400">Gespeichert.</p>
@@ -305,15 +385,17 @@
 <!-- ============ BOTTOM NAVIGATION ============ -->
 <nav class="fixed bottom-0 inset-x-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-t border-slate-200 dark:border-slate-800"
      style="padding-bottom: env(safe-area-inset-bottom)">
-  <div class="max-w-xl mx-auto grid grid-cols-4">
+  <div class="max-w-xl mx-auto grid grid-cols-5">
     <button data-view="dashboard" class="nav-btn py-3 flex flex-col items-center text-xs gap-1">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Dashboard</button>
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Start</button>
     <button data-view="capture" class="nav-btn py-3 flex flex-col items-center text-xs gap-1">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><rect x="7" y="6" width="10" height="5" rx="1"/><path d="M13.2 13.5l-2.4 3.3h3.2l-2.4 3.4"/></svg>Zähler</button>
     <button data-view="history" class="nav-btn py-3 flex flex-col items-center text-xs gap-1">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Historie</button>
+    <button data-view="report" class="nav-btn py-3 flex flex-col items-center text-xs gap-1">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7zM14 3v4h4M10 17v-3M13 17v-5M16 17v-2"/></svg>Berichte</button>
     <button data-view="settings" class="nav-btn py-3 flex flex-col items-center text-xs gap-1">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>Einstellungen</button>
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>Profil</button>
   </div>
 </nav>
 
@@ -582,6 +664,7 @@ function showView(name) {
   });
   if (name === 'capture') { if (ENABLE_AI_SCAN) startCamera(); updateCaptureDefaults(); } else stopCamera();
   if (name === 'dashboard') renderDashboard();
+  if (name === 'report') renderReport(); else reportYM = null;           // beim Verlassen zurück auf den Standardmonat
   if (name === 'settings') fillSettings();
   if (name !== 'history' && editMode) setEditMode(false);
   if (name === 'history') renderHistory();
@@ -1112,6 +1195,7 @@ function renderDashboard() {
   renderEfficiency();
   renderLossChart();
   renderKeyWarning();
+  renderReportBanner();
 }
 document.querySelectorAll('.range-btn').forEach(b => b.addEventListener('click', () => { range = b.dataset.range; renderChart(); }));
 
@@ -1393,6 +1477,7 @@ function refreshViews() {
   const v = [...document.querySelectorAll('.view')].find(el => !el.classList.contains('hidden'));
   if (v?.id === 'view-dashboard') renderDashboard();
   if (v?.id === 'view-history') renderHistory();
+  if (v?.id === 'view-report') renderReport();
 }
 const sameId = (a, b) => String(a.id) === String(b.id);
 const KEY_CACHE_UID = 'enyaq.cacheUid';                   // Konto (UID), zu dem der lokale Cache gehört
@@ -1440,6 +1525,193 @@ setTimeout(() => { if (!window.cloud) $('cloud-status').textContent = 'Cloud-Syn
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service Worker:', err)));
 }
+
+/* =====================================================================
+   Monatsbericht (Tab "Berichte")
+   Alle Zahlen kommen aus monthReport(jahr, monat) – die Ansicht rechnet nichts selbst.
+   Zuordnung der Ladungen nach Ablesedatum (wie im Verbrauchs-Diagramm).
+   ===================================================================== */
+const MONTHS_LONG = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const KEY_REPORT_SEEN = 'enyaq.reportSeen';
+let reportYM = null;                                      // { y, m } des angezeigten Monats; null = Standardmonat beim nächsten Öffnen
+const ymKey = (y, m) => y + '-' + pad2(m + 1);
+const sgn = (n, d = 1) => (n > 0.0001 ? '+' : n < -0.0001 ? '−' : '±') + fmt(Math.abs(n), d);
+const isoWeek = (d) => {                                  // ISO-Kalenderwoche
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  return Math.ceil(((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
+};
+
+function monthReport(y, m) {
+  const rs = getReadings(), s = new Date(y, m, 1), e = new Date(y, m + 1, 1), wk = new Map();
+  for (let d = new Date(s); d < e; d.setDate(d.getDate() + 1)) { const k = isoWeek(d); if (!wk.has(k)) wk.set(k, 0); }
+  const o = { y, m, charges: [], kwh: 0, cost: 0, km: 0, kwhKm: 0, costKm: 0, nKm: 0, chg: 0, stored: 0, nSoc: 0, lossCost: 0 };
+  rs.forEach((r, i) => {
+    const d = new Date(r.date);
+    if (i === 0 || !(d >= s && d < e)) return;            // der erste Eintrag ist nur der Startwert
+    const st = entryStats(rs, i), c = r.consumedSinceLast;
+    o.kwh += c; o.cost += r.cost;
+    wk.set(isoWeek(d), (wk.get(isoWeek(d)) || 0) + c);
+    if (c > 0) o.charges.push({ r, d, st });
+    if (st.km) { o.km += st.km; o.kwhKm += c; o.costKm += r.cost; o.nKm++; }
+    if (st.stored !== undefined) { o.chg += c; o.stored += st.stored; o.nSoc++; o.lossCost += (c - st.stored) * (r.cost / c); }
+  });
+  o.weeks = [...wk].map(([kw, kwh]) => ({ kw, kwh }));
+  o.kwh100 = o.km ? o.kwhKm / o.km * 100 : null;
+  o.cost100 = o.km ? o.costKm / o.km * 100 : null;
+  o.loss = o.chg > 0 ? Math.max(0, (1 - o.stored / o.chg) * 100) : null;
+  o.lossCost = Math.max(0, o.lossCost);
+  o.price = o.kwh > 0 ? o.cost / o.kwh : null;
+  return o;
+}
+const prevMonthOf = (d = new Date()) => new Date(d.getFullYear(), d.getMonth() - 1, 1);
+function defaultReportMonth() {                           // Standard: letzter abgeschlossener Monat, sonst der laufende
+  const n = new Date(), p = prevMonthOf(n);
+  return monthReport(p.getFullYear(), p.getMonth()).charges.length ? { y: p.getFullYear(), m: p.getMonth() } : { y: n.getFullYear(), m: n.getMonth() };
+}
+function markReportSeen(y, m) {
+  const p = prevMonthOf();
+  if (y === p.getFullYear() && m === p.getMonth()) save(KEY_REPORT_SEEN, ymKey(y, m));
+}
+
+/** Hinweiskarte auf dem Dashboard, solange der Bericht des Vormonats noch nicht angesehen wurde. */
+function renderReportBanner() {
+  const el = $('report-banner'), p = prevMonthOf(), key = ymKey(p.getFullYear(), p.getMonth());
+  const show = load(KEY_REPORT_SEEN, '') !== key && monthReport(p.getFullYear(), p.getMonth()).charges.length > 0;
+  el.classList.toggle('hidden', !show);
+  if (show) $('report-banner-text').textContent = 'Dein Bericht für ' + MONTHS_LONG[p.getMonth()] + ' ist fertig';
+}
+$('report-banner').addEventListener('click', () => { const p = prevMonthOf(); reportYM = { y: p.getFullYear(), m: p.getMonth() }; showView('report'); });
+
+const repRow = (k, v, cls = '') => `<div class="flex justify-between items-baseline gap-3 text-sm py-1.5 border-t first:border-t-0 border-slate-200 dark:border-slate-800"><span class="text-slate-500 dark:text-slate-400">${k}</span><span class="font-medium text-right ${cls}">${v}</span></div>`;
+const GOOD = 'text-emerald-600 dark:text-emerald-400', BAD = 'text-amber-600 dark:text-amber-400';
+
+function renderReport() {
+  if (!reportYM) reportYM = defaultReportMonth();
+  const { y, m } = reportYM, rs = getReadings(), n = new Date(), cur = y === n.getFullYear() && m === n.getMonth();
+  const r = monthReport(y, m), py = m === 0 ? y - 1 : y, pm = m === 0 ? 11 : m - 1, p = monthReport(py, pm);
+  const first = rs.length ? new Date(rs[0].date) : n;
+  $('rep-prev').disabled = !(y > first.getFullYear() || (y === first.getFullYear() && m > first.getMonth()));
+  $('rep-next').disabled = cur;
+  $('rep-title').textContent = MONTHS_LONG[m] + ' ' + y;
+  $('rep-sub').textContent = cur ? 'Zwischenstand bis heute' : 'Monatsbericht';
+  $('rep-print-app').textContent = getSettings().title || DEFAULT_TITLE;
+  markReportSeen(y, m);
+
+  const empty = !r.charges.length;
+  $('rep-empty').classList.toggle('hidden', !empty); $('rep-body').classList.toggle('hidden', empty);
+  if (empty) return;
+
+  /* Kopf: Kosten und Vergleich bzw. Hochrechnung */
+  const dim = new Date(y, m + 1, 0).getDate(), days = Math.max(1, (Date.now() - new Date(y, m, 1)) / 86400000), proj = r.cost / days * dim;
+  $('rep-cost').textContent = fmt(r.cost, 2);
+  const dl = $('rep-delta');
+  if (cur) { dl.textContent = 'Hochrechnung bis Monatsende: ca. ' + eur(proj); dl.className = 'text-sm mt-2 text-slate-500 dark:text-slate-400'; }
+  else if (p.cost > 0) {
+    const pct = (r.cost / p.cost - 1) * 100;
+    dl.textContent = (pct <= 0 ? '↓ ' + fmt(-pct, 0) + ' % günstiger' : '↑ ' + fmt(pct, 0) + ' % teurer') + ' als im ' + MONTHS_LONG[pm] + ' (' + eur(p.cost) + ')';
+    dl.className = 'text-sm mt-2 ' + (pct <= 0 ? GOOD : BAD);
+  } else { dl.textContent = 'Kein Vormonat zum Vergleich'; dl.className = 'text-sm mt-2 text-slate-500 dark:text-slate-400'; }
+
+  $('rep-kwh').textContent = fmt(r.kwh, 1);
+  $('rep-n').textContent = r.charges.length; $('rep-n-sub').textContent = 'Ø ' + fmt(r.kwh / r.charges.length, 1) + ' kWh';
+  $('rep-price').textContent = fmt(r.price, 3);
+
+  /* Wochenverlauf */
+  const max = Math.max(1, ...r.weeks.map(w => w.kwh)), top = Math.max(...r.weeks.map(w => w.kwh));
+  $('rep-weeks').innerHTML = `<div class="flex items-end gap-2 h-[120px]">${r.weeks.map(w => `<div class="flex-1 text-center"><div class="text-xs ${w.kwh === top ? 'font-semibold' : 'text-slate-500 dark:text-slate-400'}">${w.kwh > 0 ? fmt(w.kwh, 1) : '–'}</div><div class="rounded" style="height:${Math.max(2, Math.round(w.kwh / max * 90))}px;background:${w.kwh === top ? '#1D9E75' : '#5DCAA5'}"></div></div>`).join('')}</div>`
+    + `<div class="flex gap-2 mt-1">${r.weeks.map(w => `<span class="flex-1 text-center text-xs text-slate-500 dark:text-slate-400">KW ${w.kw}</span>`).join('')}</div>`;
+
+  /* Effizienz */
+  $('rep-kwh100').textContent = r.kwh100 != null ? fmt(r.kwh100, 1) : '–';
+  $('rep-cost100').textContent = r.cost100 != null ? fmt(r.cost100, 2) : '–';
+  $('rep-loss').textContent = r.loss != null ? fmt(r.loss, 0) + ' %' : '–';
+  $('rep-eff-note').textContent = (r.km ? fmt(r.km, 0) + ' km gefahren' : 'Kein km-Stand erfasst') + (r.loss != null ? ' · Verlust kostete ca. ' + eur(r.lossCost) : '');
+
+  /* Vergleich + Jahr */
+  let ytdCost = 0, ytdKwh = 0, ytdMonths = 0;
+  for (let mm = 0; mm <= m; mm++) { const q = monthReport(y, mm); if (q.charges.length) { ytdCost += q.cost; ytdKwh += q.kwh; ytdMonths++; } }
+  const rows = [];
+  if (p.charges.length && cur) {
+    rows.push(repRow('Kosten ' + MONTHS_LONG[pm] + ' (gesamt)', eur(p.cost)), repRow('kWh ' + MONTHS_LONG[pm] + ' (gesamt)', fmt(p.kwh, 1) + ' kWh'), repRow('Hochrechnung dieser Monat', 'ca. ' + eur(proj)));
+  } else if (p.charges.length) {
+    rows.push(repRow('Kosten zum Vormonat', sgn(r.cost - p.cost, 2) + ' € (' + sgn((r.cost / p.cost - 1) * 100, 0) + ' %)', r.cost <= p.cost ? GOOD : BAD),
+              repRow('kWh zum Vormonat', sgn(r.kwh - p.kwh, 1) + ' kWh', r.kwh <= p.kwh ? GOOD : BAD));
+    if (r.kwh100 != null && p.kwh100 != null) rows.push(repRow('Verbrauch zum Vormonat', sgn(r.kwh100 - p.kwh100, 1) + ' kWh/100 km', r.kwh100 <= p.kwh100 ? GOOD : BAD));
+  } else rows.push(repRow('Vormonat', 'keine Daten'));
+  rows.push(repRow('Ø Monatskosten ' + y, eur(ytdCost / ytdMonths)));
+  $('rep-compare').innerHTML = rows.join('');
+
+  /* Highlights */
+  const big = r.charges.reduce((a, b) => b.r.consumedSinceLast > a.r.consumedSinceLast ? b : a);
+  const wd = [0, 0, 0, 0, 0, 0, 0]; r.charges.forEach(c => wd[c.d.getDay()]++);
+  const wdTop = wd.indexOf(Math.max(...wd));
+  const avgMin = r.charges.reduce((s, c) => s + (realMsOf(c.r) ? realMsOf(c.r) / 60000 : c.r.consumedSinceLast / chargePowerKw() * 60), 0) / r.charges.length;
+  $('rep-high').innerHTML = repRow('Größte Ladung', fmt(big.r.consumedSinceLast, 1) + ' kWh · ' + eur(big.r.cost) + ' (KW ' + isoWeek(big.d) + ')')
+    + repRow('Häufigster Ladetag', WEEKDAYS[wdTop] + ' (' + wd[wdTop] + ' von ' + r.charges.length + ')')
+    + repRow('Ø Ladedauer', durHm(avgMin * 60000) + ' h')
+    + repRow('Jahr bisher', eur(ytdCost) + ' · ' + fmt(ytdKwh, 0) + ' kWh');
+
+  /* Hinweise zur Datenbasis */
+  const msgs = [], nc = r.charges.length;
+  if (r.nKm === 0) msgs.push('Kein km-Stand erfasst – Verbrauch pro 100 km nicht berechenbar.');
+  else if (r.nKm < nc) msgs.push('Bei ' + (nc - r.nKm) + ' von ' + nc + ' Ladungen fehlt der km-Stand, der Verbrauch beruht auf ' + r.nKm + ' Ladungen.');
+  if (r.nSoc > 0 && r.nSoc < nc) msgs.push('Der Ladeverlust beruht auf ' + r.nSoc + ' von ' + nc + ' Ladungen.');
+  const ign = new Set(load(DQ_KEY, [])), s0 = new Date(y, m, 1), e0 = new Date(y, m + 1, 1);
+  const dq = rs.length > 1 ? dataChecks(rs).filter(f => { const d = new Date(rs[f.i].date); return !ign.has(f.id + ':' + f.code) && d >= s0 && d < e0; }).length : 0;
+  if (dq) msgs.push(dq + (dq === 1 ? ' Hinweis' : ' Hinweise') + ' aus der Datenprüfung offen.');
+  $('rep-hint').textContent = msgs.join(' '); $('rep-hint').classList.toggle('hidden', !msgs.length);
+
+  /* Ladeliste (nur im PDF/Druck sichtbar) */
+  const th = 'text-left font-medium py-1 border-b border-slate-300', td = 'py-1 border-b border-slate-200';
+  $('rep-list').innerHTML = `<p class="text-sm mb-2">Alle Ladungen im ${MONTHS_LONG[m]} ${y}</p><table class="w-full text-xs"><thead><tr><th class="${th}">Datum</th><th class="${th} text-right">kWh</th><th class="${th} text-right">Kosten</th><th class="${th} text-right">Dauer</th><th class="${th} text-right">km</th></tr></thead><tbody>`
+    + r.charges.map(c => `<tr><td class="${td}">${c.d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}, ${c.d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</td><td class="${td} text-right">${fmt(c.r.consumedSinceLast, 1)}</td><td class="${td} text-right">${eur(c.r.cost)}</td><td class="${td} text-right">${chargeDurationOf(c.r)}</td><td class="${td} text-right">${c.st.km ? fmt(c.st.km, 0) : '–'}</td></tr>`).join('')
+    + `<tr class="font-semibold"><td class="py-1">Summe</td><td class="py-1 text-right">${fmt(r.kwh, 1)}</td><td class="py-1 text-right">${eur(r.cost)}</td><td></td><td class="py-1 text-right">${r.km ? fmt(r.km, 0) : '–'}</td></tr></tbody></table>`;
+}
+$('rep-prev').addEventListener('click', () => { const d = new Date(reportYM.y, reportYM.m - 1, 1); reportYM = { y: d.getFullYear(), m: d.getMonth() }; renderReport(); });
+$('rep-next').addEventListener('click', () => { const d = new Date(reportYM.y, reportYM.m + 1, 1); reportYM = { y: d.getFullYear(), m: d.getMonth() }; renderReport(); });
+
+/* PDF: Druckdialog des Geräts (dort „Als PDF sichern“); Dateiname = Dokumenttitel */
+$('rep-pdf').addEventListener('click', () => {
+  const old = document.title; document.title = 'Ladebericht ' + $('rep-title').textContent;
+  window.addEventListener('afterprint', () => { document.title = old; }, { once: true });
+  window.print();
+});
+
+/* Bild: Zusammenfassung auf Canvas zeichnen, per Teilen-Dialog senden (sonst als PNG herunterladen) */
+$('rep-img').addEventListener('click', () => {
+  const W = 1080, H = 1420, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'), F = 'system-ui, -apple-system, "Segoe UI", sans-serif', txt = (id) => $(id).textContent;
+  const box = (x, y, w, h, col, r = 32) => { g.fillStyle = col; g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); g.fill(); };
+  const t = (s, x, y, size, col, wt = 400, al = 'left', font = F) => { g.font = wt + ' ' + size + 'px ' + font; g.fillStyle = col; g.textAlign = al; g.fillText(s, x, y); };
+  box(0, 0, W, H, '#f1f5f9', 0);
+  t(txt('rep-title'), 60, 100, 60, '#0f172a', 600); t((getSettings().title || DEFAULT_TITLE) + ' · ' + txt('rep-sub'), 60, 150, 30, '#64748b');
+  box(60, 190, 960, 290, '#fff'); t('Ladekosten im Monat', 100, 250, 30, '#64748b');
+  t(txt('rep-cost') + ' €', 100, 365, 110, '#059669', 600);
+  t(txt('rep-delta'), 100, 445, 30, /↓/.test(txt('rep-delta')) ? '#059669' : /↑/.test(txt('rep-delta')) ? '#d97706' : '#64748b');
+  [['Geladen', 'rep-kwh', 'kWh'], ['Ladungen', 'rep-n', txt('rep-n-sub')], ['Ø Preis', 'rep-price', '€/kWh']].forEach(([l, id, sub], i) => {
+    const x = 60 + i * 330; box(x, 510, 300, 190, '#fff', 28); t(l, x + 28, 560, 26, '#64748b'); t(txt(id), x + 28, 630, 54, '#0f172a', 600); t(sub, x + 28, 674, 24, '#64748b');
+  });
+  box(60, 730, 960, 250, '#fff'); t('Effizienz', 100, 790, 30, '#64748b');
+  [['kWh/100 km', 'rep-kwh100', '#ecfdf5', '#047857'], ['€/100 km', 'rep-cost100', '#f0f9ff', '#0369a1'], ['Ladeverlust', 'rep-loss', '#fffbeb', '#b45309']].forEach(([l, id, bg, fg], i) => {
+    const x = 100 + i * 300; box(x, 815, 270, 105, bg, 20); t(l, x + 135, 850, 24, '#64748b', 400, 'center'); t(txt(id), x + 135, 900, 44, fg, 600, 'center');
+  });
+  t(txt('rep-eff-note'), 100, 955, 26, '#64748b');
+  const cmp = [...$('rep-compare').children].map(el => [el.children[0].textContent, el.children[1].textContent]).slice(0, 4), h = 90 + cmp.length * 62;
+  box(60, 1010, 960, h, '#fff'); t('Vergleich', 100, 1070, 30, '#64748b');
+  cmp.forEach(([k, v], i) => { t(k, 100, 1130 + i * 62, 30, '#475569'); t(v, 980, 1130 + i * 62, 30, '#0f172a', 500, 'right'); });
+  t('Erstellt mit ' + (getSettings().title || DEFAULT_TITLE), W / 2, H - 40, 24, '#94a3b8', 400, 'center');
+  cv.toBlob(async (blob) => {
+    if (!blob) { flash($('rep-msg'), 'Bild konnte nicht erstellt werden.', false); $('rep-msg').classList.remove('hidden'); return; }
+    const name = 'ladebericht-' + ymKey(reportYM.y, reportYM.m) + '.png', file = new File([blob], name, { type: 'image/png' });
+    try {
+      if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: 'Ladebericht ' + txt('rep-title') }); return; }
+    } catch (e) { if (e.name === 'AbortError') return; }                       // abgebrochen = nichts tun, sonst Download
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    flash($('rep-msg'), 'Bild gespeichert.', true); $('rep-msg').classList.remove('hidden');
+  }, 'image/png');
+});
 
 if (getLive()) tickLive();                              // Live-Modus nach Neuladen fortsetzen
 $('scan-card').classList.toggle('hidden', !ENABLE_AI_SCAN);
