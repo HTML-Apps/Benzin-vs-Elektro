@@ -99,6 +99,9 @@
           <p id="dash-last-kwh" class="text-2xl font-semibold text-sky-700 dark:text-sky-300">–</p>
         </div>
       </div>
+      <div id="live-img-wrap" class="hidden mt-3 rounded-2xl overflow-hidden bg-black">
+        <img src="/Enyaq.jpg" alt="Ladeanimation des Enyaq" class="w-full aspect-[2/1] object-cover" onerror="this.parentElement.remove()">
+      </div>
     </div>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
@@ -871,6 +874,7 @@ function renderLive() {
   $('live-battery').classList.toggle('hidden', !hasT);
   $('dash-title').textContent = !on ? 'Aktueller Zählerstand' : done ? 'Ladung abgeschlossen' : 'Live-Simulation · ' + livePower(live) + ' kW';
   $('live-info').classList.toggle('hidden', !on);
+  $('live-img-wrap')?.classList.toggle('hidden', !on);                     // Ladebild nur im Live-Modus
   if (!on) return;
 
   const finishAt = hasT ? (live.anchorT ?? live.startedAt) + (live.kwhTarget - (live.anchorKwh ?? 0)) / livePower(live) * 3600000 / LIVE_SPEED : null;
