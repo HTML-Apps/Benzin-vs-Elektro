@@ -31,7 +31,7 @@
   .live-on .phase-led.l3 { animation-delay: .5s; }
   @keyframes ledpulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { .live-on .phase-led { animation: none; opacity: 1; } }
-  .odo-drum { width: 2.1rem; height: 3.1rem; background: #1c1c1c; border: 1px solid #444; border-radius: 4px; overflow: hidden; position: relative; }
+  .odo-drum { width: 1.85rem; height: 3.1rem; background: #1c1c1c; border: 1px solid #444; border-radius: 4px; overflow: hidden; position: relative; }
   .odo-col { position: absolute; left: 0; right: 0; top: 0; transition: transform 1.4s cubic-bezier(.2, .8, .2, 1); }
   .odo-col div { height: 3.1rem; line-height: 3.1rem; text-align: center; font-size: 1.8rem; font-weight: 500; color: #ffffff; font-family: ui-monospace, Menlo, Consolas, monospace; }
   .odo-dim { opacity: .75; }
@@ -116,7 +116,7 @@
       </div>
     </div>
 
-    <div id="dash-place" class="flex bg-slate-200 dark:bg-slate-800 rounded-xl p-1"><button type="button" data-place="home" class="dash-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Zuhause</button><button type="button" data-place="bosch" class="dash-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Bosch</button><button type="button" data-place="away" class="dash-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Unterwegs</button></div>
+    <div id="dash-place" class="flex bg-slate-200 dark:bg-slate-800 rounded-xl p-1"><button type="button" data-place="home" class="dash-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Zuhause</button><button type="button" data-place="bosch" class="dash-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Bosch</button><button type="button" data-place="away" class="dash-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Unterwegs</button><button type="button" data-place="all" class="dash-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Gesamt</button></div>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mb-3" id="range-switch">
@@ -164,14 +164,14 @@
   </section>
 
   <!-- ============ VIEW 2: ERFASSEN ============ -->
-  <section id="view-capture" class="view hidden space-y-4">
+  <section id="view-capture" class="view hidden space-y-3">
     <h1 id="cap-title" class="text-xl font-semibold">Zählerstand erfassen</h1>
     <div id="cap-place" class="flex bg-slate-200 dark:bg-slate-800 rounded-xl p-1"><button type="button" data-place="home" class="cap-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Zuhause</button><button type="button" data-place="bosch" class="cap-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Bosch</button><button type="button" data-place="away" class="cap-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Unterwegs</button></div>
 
     <div id="cap-meter-card" class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <p class="flex items-center justify-between h-7 text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Zählerstand</span></p>
+      <p class="flex items-baseline justify-between gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1.5"><span>Zählerstand</span><span id="reading-last"></span></p>
       <div class="flex gap-2 items-stretch">
-        <div id="seg2-box" class="flex-1 min-w-0 lcd relative rounded-xl px-3 py-4 flex items-end justify-end gap-2 focus-within:ring-2 focus-within:ring-blue-800 focus-within:shadow-[0_0_14px_3px_rgba(30,64,175,0.7)]">
+        <div id="seg2-box" class="flex-1 min-w-0 lcd relative rounded-xl px-3 py-3 flex items-end justify-end gap-2 focus-within:ring-2 focus-within:ring-blue-800 focus-within:shadow-[0_0_14px_3px_rgba(30,64,175,0.7)]">
         <span id="seg2-wrap" class="seg-wrap seg"><span class="seg-ghost">888888.8</span><span id="seg2-on" class="seg-on"></span></span>
         <span id="seg2-unit" class="text-sm pb-1">kWh</span>
         <input id="reading-input" type="text" inputmode="decimal" autocomplete="off" aria-label="Zählerstand in kWh" class="absolute inset-0 w-full h-full opacity-0 cursor-text">
@@ -181,7 +181,7 @@
           <button id="rd-minus" type="button" aria-label="Zählerstand um 0,1 verringern" class="flex-1 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-2xl font-semibold leading-none active:scale-95 transition select-none touch-manipulation">−</button>
         </div>
       </div>
-      <p id="reading-calc" class="text-sm text-sm text-slate-500 dark:text-slate-400 text-right mt-2 min-h-[1.25rem]"></p>
+      <p id="reading-calc" class="hidden text-sm text-slate-500 dark:text-slate-400 text-right mt-1.5"></p>
     </div>
 
     <div id="cap-away-card" class="hidden rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
@@ -194,16 +194,16 @@
     </div>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <p class="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Kilometerstand</span></p>
-      <div id="odo" class="flex justify-center gap-1 cursor-pointer" role="button" aria-label="Kilometerstand von Hand eingeben"></div>
-      <input id="km-input" type="hidden">
-      <div class="flex justify-between items-center gap-2 mt-3">
-        <span id="odo-info" class="text-xs text-slate-500 dark:text-slate-400"></span>
-        <div class="flex gap-2 shrink-0">
-          <button id="btn-km-edit" type="button" class="shrink-0 text-sm px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Eingeben</button>
-          <button id="btn-odo" class="shrink-0 text-sm px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Update</button>
+      <p class="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-1.5"><span>Kilometerstand</span></p>
+      <div class="flex items-center gap-2">
+        <div id="odo" class="flex justify-start gap-1 cursor-pointer min-w-0" role="button" aria-label="Kilometerstand von Hand eingeben"></div>
+        <div class="flex flex-col gap-1 shrink-0 ml-auto w-20">
+          <button id="btn-odo" class="w-full text-sm px-2 py-1 rounded-xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Update</button>
+          <button id="btn-km-edit" type="button" class="w-full text-sm px-2 py-1 rounded-xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Eingeben</button>
         </div>
       </div>
+      <input id="km-input" type="hidden">
+      <p id="odo-info" class="text-xs text-slate-500 dark:text-slate-400 mt-1.5"></p>
       <div id="km-edit-row" class="hidden mt-3 flex gap-2">
         <input id="km-edit" type="text" inputmode="numeric" autocomplete="off" placeholder="Kilometerstand" aria-label="Kilometerstand"
                class="flex-1 min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -288,7 +288,7 @@
       <button id="rep-next" type="button" aria-label="Nächster Monat" class="print:invisible w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center active:scale-95 transition disabled:opacity-30"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
 
-    <div id="rep-place" class="print:hidden flex bg-slate-200 dark:bg-slate-800 rounded-xl p-1"><button type="button" data-place="home" class="rep-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Zuhause</button><button type="button" data-place="bosch" class="rep-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Bosch</button><button type="button" data-place="away" class="rep-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Unterwegs</button></div>
+    <div id="rep-place" class="print:hidden flex bg-slate-200 dark:bg-slate-800 rounded-xl p-1"><button type="button" data-place="home" class="rep-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Zuhause</button><button type="button" data-place="bosch" class="rep-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Bosch</button><button type="button" data-place="away" class="rep-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Unterwegs</button><button type="button" data-place="all" class="rep-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Gesamt</button></div>
 
     <div id="rep-empty" class="hidden rcard rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-6 text-center">
       <p id="rep-empty-t" class="font-medium">Keine Ladungen in diesem Monat</p>
@@ -457,6 +457,9 @@ const getReadings = () => load(KEY_READINGS, []);
    ===================================================================== */
 const PLACES = { home: 'Zuhause', bosch: 'Bosch', away: 'Unterwegs' };
 const PLACE_KEYS = Object.keys(PLACES);
+const VIEWS = { ...PLACES, all: 'Gesamt' };                         // Auswahl in Dashboard/Bericht: die drei Orte + Gesamt (Mix aus allen)
+const inView = (r, p) => p === 'all' || placeOf(r) === p;           // gehört der Eintrag zur gewählten Ansicht?
+const whereTxt = (p) => p === 'home' || p === 'all' ? '' : ' bei „' + PLACES[p] + '“';
 const placeOf = (r) => PLACES[r?.place] ? r.place : 'home';
 const isHome = (r) => placeOf(r) === 'home';
 const prevHomeIdx = (rs, i) => { for (let j = i - 1; j >= 0; j--) if (isHome(rs[j])) return j; return -1; };   // Vorgänger am Zähler
@@ -535,8 +538,10 @@ function paintReading() {
   $('seg2-on').textContent = ok ? Math.min(v, 999999.9).toFixed(1).padStart(8, '0') : '';       // wie im Dashboard; leer = nur Geistersegmente
   const last = lastHome(), calc = $('reading-calc');
   const kwh = ok && last ? Math.round((v - last.totalReading) * 10) / 10 : null;
-  calc.className = 'text-sm text-right mt-2 min-h-[1.25rem] ' + (kwh != null && kwh < 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400');
-  calc.textContent = kwh == null ? (last ? 'Letzter Stand: ' + fmt(last.totalReading) + ' kWh' : '')
+  $('reading-last').textContent = last ? 'Letzter Stand ' + fmt(last.totalReading) + ' kWh' : '';         // steht neben der Überschrift (spart Höhe)
+  calc.className = 'text-sm text-right mt-1.5 ' + (kwh != null && kwh < 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400');
+  calc.classList.toggle('hidden', kwh == null);                                   // Rechenzeile nur, wenn ein Wert eingegeben ist
+  calc.textContent = kwh == null ? ''
     : kwh >= 0 ? '+' + fmt(kwh) + ' kWh seit letztem Eintrag · ' + eur(kwh * getSettings().price) : 'Kleiner als der letzte Stand (' + fmt(last.totalReading) + ')';
 }
 
@@ -1021,17 +1026,17 @@ function buildBuckets(kind, readings) {
 
 const RANGE_TXT = { week: 'der letzten 8 Wochen (Wochenbeginn)', month: 'der letzten 12 Monate', year: 'pro Jahr' };
 function renderChart() {
-  const readings = getReadings().filter(r => placeOf(r) === dashPlace), home = dashPlace === 'home';
+  const readings = getReadings().filter(r => inView(r, dashPlace)), home = dashPlace === 'home';
   const buckets = buildBuckets(range, readings);
   readings.forEach(r => {                                  // Zuhause: Verbrauch am Zähler; Bosch/Unterwegs: eingetragene kWh – jeweils dem Zeitraum des Datums zuordnen
     const d = new Date(r.date), b = buckets.find(b => d >= b.s && d < b.e);
     if (b) { b.kwh += r.consumedSinceLast; b.cost += r.cost; }
   });
   const hasData = buckets.some(b => b.kwh > 0);
-  $('chart-empty').textContent = home ? 'Noch keine Daten. Erfasse mindestens zwei Zählerstände.' : 'Noch keine Ladungen mit kWh-Angabe bei „' + PLACES[dashPlace] + '“. Trage beim Erfassen die kWh laut Säule ein.';
+  $('chart-empty').textContent = home || dashPlace === 'all' ? 'Noch keine Daten. Erfasse mindestens zwei Zählerstände.' : 'Noch keine Ladungen mit kWh-Angabe bei „' + PLACES[dashPlace] + '“. Trage beim Erfassen die kWh laut Säule ein.';
   $('chart-empty').classList.toggle('hidden', hasData);
   $('chart').parentElement.classList.toggle('hidden', !hasData);
-  $('chart-title').textContent = home ? 'Verbrauch ' + RANGE_TXT[range] : PLACES[dashPlace] + ' · geladen ' + RANGE_TXT[range];
+  $('chart-title').textContent = home ? 'Verbrauch ' + RANGE_TXT[range] : VIEWS[dashPlace] + ' · geladen ' + RANGE_TXT[range];
 
   document.querySelectorAll('.range-btn').forEach(b => {
     const on = b.dataset.range === range;
@@ -1242,8 +1247,8 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && ge
 let statRange = 'week';
 
 function renderStats() {
-  const readings = getReadings(), own = readings.filter(r => placeOf(r) === dashPlace);
-  const charges = readings.filter((r, i) => placeOf(r) === dashPlace && isCharge(readings, i));
+  const readings = getReadings(), own = readings.filter(r => inView(r, dashPlace));
+  const charges = readings.filter((r, i) => inView(r, dashPlace) && isCharge(readings, i));
   document.querySelectorAll('.stat-btn').forEach(b => {
     const on = b.dataset.stat === statRange;
     b.classList.toggle('bg-white', on); b.classList.toggle('dark:bg-slate-700', on); b.classList.toggle('shadow-sm', on);
@@ -1252,7 +1257,7 @@ function renderStats() {
   const names = { week: 'Woche', month: 'Monat' };
   label.textContent = statRange === 'year' ? 'Ladungen im Jahr ' + new Date().getFullYear() + ' (gesamt)' : 'Ø Ladungen pro ' + names[statRange];
 
-  if (!charges.length) { value.textContent = '–'; note.textContent = 'Noch keine Ladungen' + (dashPlace === 'home' ? '' : ' bei „' + PLACES[dashPlace] + '“') + ' erfasst.'; return; }
+  if (!charges.length) { value.textContent = '–'; note.textContent = 'Noch keine Ladungen' + whereTxt(dashPlace) + ' erfasst.'; return; }
 
   if (statRange === 'year') {
     const byYear = {};
@@ -1273,7 +1278,7 @@ function renderStats() {
 document.querySelectorAll('.stat-btn').forEach(b => b.addEventListener('click', () => { statRange = b.dataset.stat; renderStats(); }));
 
 function renderEfficiency() {                            // gewichteter Durchschnitt über die Einträge des gewählten Ladeorts
-  const rs = getReadings(), idxs = rs.map((_, i) => i).filter(i => placeOf(rs[i]) === dashPlace);
+  const rs = getReadings(), idxs = rs.map((_, i) => i).filter(i => inView(rs[i], dashPlace));
   let chg = 0, stored = 0, nSoc = 0;
   idxs.forEach(i => {
     const s = entryStats(rs, i);
@@ -1297,7 +1302,7 @@ function renderLossChart() {
   const rs = getReadings(), byMonth = {}, season = { summer: { chg: 0, st: 0 }, winter: { chg: 0, st: 0 } };
   let chgAll = 0, stAll = 0, lossCost = 0, n = 0;
   rs.forEach((r, i) => {
-    if (placeOf(r) !== dashPlace) return;
+    if (!inView(r, dashPlace)) return;
     const s = entryStats(rs, i); if (s.stored === undefined) return;       // nur Ladungen mit Start-/Ende-% und kWh
     const d = new Date(r.date), key = d.getFullYear() + '-' + d.getMonth(), m = (byMonth[key] = byMonth[key] || { chg: 0, st: 0 });
     m.chg += r.consumedSinceLast; m.st += s.stored;
@@ -1319,7 +1324,7 @@ function renderLossChart() {
   }
   const has = kwh.some(v => v != null);
   $('loss-chart').parentElement.classList.toggle('hidden', !has); $('loss-empty').classList.toggle('hidden', has);
-  $('loss-empty').textContent = dashPlace === 'home' ? 'Noch keine Ladungen mit Akku-Start und -Ende erfasst.' : 'Noch keine Ladungen mit kWh und Akku-Start/-Ende bei „' + PLACES[dashPlace] + '“.';
+  $('loss-empty').textContent = dashPlace === 'home' || dashPlace === 'all' ? 'Noch keine Ladungen mit Akku-Start und -Ende erfasst.' : 'Noch keine Ladungen mit kWh und Akku-Start/-Ende bei „' + PLACES[dashPlace] + '“.';
   $('loss-note').textContent = n ? 'Basis: ' + n + ' Ladungen · Kapazität je Ladung gespeichert · enthält u. a. Batterieheizung und Wandlerverluste' : '';
   if (lossChart) lossChart.destroy();
   if (!has) return;
@@ -1466,15 +1471,21 @@ function renderHistory() {
         <span class="font-semibold">${WEEKDAYS[d.getDay()]}</span>
         <span class="text-sm text-slate-500 dark:text-slate-400">${date}</span>
       </div>`;
-    if (!home) {                                                       // Bosch / Unterwegs: kein Zähler, nur optionale kWh/Preis
+    if (!home) {                                       // Bosch / Unterwegs: gleiche Reihenfolge wie Zuhause (Kacheln -> Kosten -> km/Ladestand/Verbrauch), nur ohne Zähler
       const hasKwh = r.consumedSinceLast > 0, hasPrice = r.pricePerKwh != null;
       return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       ${head}
-      <div class="mt-2"><span class="text-xs px-2.5 py-1 rounded-lg ${PLACE_BADGE[place]}">${PLACES[place]}</span></div>
+      <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+        <div><p class="${lbl}">Ort</p><p class="mt-0.5"><span class="text-xs px-2.5 py-1 rounded-lg ${PLACE_BADGE[place]}">${PLACES[place]}</span></p></div>
+        <div><p class="${lbl}">Preis</p><p class="font-medium">${hasPrice ? fmt(r.pricePerKwh, 3) + ' €' : '–'}</p></div>
+        <div class="rounded-xl bg-emerald-50 dark:bg-emerald-950/50 py-1"><p class="${lbl}">Geladen</p>
+          <p class="font-semibold text-emerald-700 dark:text-emerald-300">${hasKwh ? fmt(r.consumedSinceLast) + ' kWh' : '–'}</p></div>
+      </div>
+      <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+        <span class="text-sm text-slate-500 dark:text-slate-400">Kosten${hasPrice ? ` <span class="text-xs">(${fmt(r.pricePerKwh, 3)} €/kWh)</span>` : ''}</span>
+        <span class="text-lg font-semibold">${hasKwh && hasPrice ? eur(r.cost) : '–'}</span>
+      </div>
       ${extra}
-      ${row('Geladen <span class="text-xs">(laut Säule)</span>', hasKwh ? fmt(r.consumedSinceLast) + ' kWh' : '–')}
-      ${row('Preis', hasPrice ? fmt(r.pricePerKwh, 3) + ' €/kWh' : '–')}
-      ${row('Kosten', hasKwh && hasPrice ? eur(r.cost) : '–')}
     </li>`;
     }
     return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
@@ -1786,7 +1797,7 @@ function monthReport(y, m, place = 'home') {
   const o = { y, m, place, charges: [], kwh: 0, cost: 0, km: 0, kwhKm: 0, costKm: 0, nKm: 0, chg: 0, stored: 0, nSoc: 0, lossCost: 0, kwhP: 0, costP: 0 }, idx = [];
   rs.forEach((r, i) => {
     const d = new Date(r.date);
-    if (placeOf(r) !== place || isStartRow(rs, i) || !(d >= s && d < e)) return;   // der erste Zuhause-Eintrag (ohne Reset) ist nur der Startwert
+    if (!inView(r, place) || isStartRow(rs, i) || !(d >= s && d < e)) return;   // der erste Zuhause-Eintrag (ohne Reset) ist nur der Startwert
     const st = entryStats(rs, i), c = r.consumedSinceLast, u = unitOf(r);
     o.kwh += c; o.cost += r.cost;
     wk.set(isoWeek(d), (wk.get(isoWeek(d)) || 0) + c);
@@ -1839,14 +1850,14 @@ function renderReport() {
   $('rep-prev').disabled = !(y > first.getFullYear() || (y === first.getFullYear() && m > first.getMonth()));
   $('rep-next').disabled = cur;
   $('rep-title').textContent = MONTHS_LONG[m] + ' ' + y;
-  $('rep-sub').textContent = (cur ? 'Zwischenstand bis heute' : 'Monatsbericht') + ' · ' + PLACES[repPlace];
+  $('rep-sub').textContent = (cur ? 'Zwischenstand bis heute' : 'Monatsbericht') + ' · ' + VIEWS[repPlace];
   segPaint('.rep-place-btn', repPlace);
   $('rep-print-app').textContent = getSettings().title || DEFAULT_TITLE;
   markReportSeen(y, m);
 
   const empty = !r.charges.length;
-  $('rep-empty-t').textContent = 'Keine Ladungen' + (repPlace === 'home' ? '' : ' bei „' + PLACES[repPlace] + '“') + ' in diesem Monat';
-  $('rep-empty-s').textContent = repPlace === 'home' ? 'Sobald du einen Zählerstand erfasst, erscheint hier der Bericht.' : 'Sobald du eine Ladung bei „' + PLACES[repPlace] + '“ erfasst, erscheint hier der Bericht.';
+  $('rep-empty-t').textContent = 'Keine Ladungen' + whereTxt(repPlace) + ' in diesem Monat';
+  $('rep-empty-s').textContent = repPlace === 'home' || repPlace === 'all' ? 'Sobald du eine Ladung erfasst, erscheint hier der Bericht.' : 'Sobald du eine Ladung bei „' + PLACES[repPlace] + '“ erfasst, erscheint hier der Bericht.';
   $('rep-empty').classList.toggle('hidden', !empty); $('rep-body').classList.toggle('hidden', empty);
   if (empty) return;
 
@@ -1892,13 +1903,14 @@ function renderReport() {
   $('rep-compare').innerHTML = rows.join('');
 
   /* Highlights */
-  const big = r.charges.reduce((a, b) => b.r.consumedSinceLast > a.r.consumedSinceLast ? b : a), homeRep = repPlace === 'home';
+  const big = r.charges.reduce((a, b) => b.r.consumedSinceLast > a.r.consumedSinceLast ? b : a);
   const wd = [0, 0, 0, 0, 0, 0, 0]; r.charges.forEach(c => wd[c.d.getDay()]++);
   const wdTop = wd.indexOf(Math.max(...wd));
-  const avgMin = r.charges.reduce((s, c) => s + (realMsOf(c.r) ? realMsOf(c.r) / 60000 : c.r.consumedSinceLast / chargePowerKw() * 60), 0) / r.charges.length;
+  const hc = r.charges.filter(c => isHome(c.r));                                  // Ladedauer gibt es nur für Zähler-Ladungen zuhause
+  const avgMin = hc.reduce((s, c) => s + (realMsOf(c.r) ? realMsOf(c.r) / 60000 : c.r.consumedSinceLast / chargePowerKw() * 60), 0) / (hc.length || 1);
   $('rep-high').innerHTML = (big.r.consumedSinceLast > 0 ? repRow('Größte Ladung', fmt(big.r.consumedSinceLast, 1) + ' kWh' + (big.r.cost > 0 ? ' · ' + eur(big.r.cost) : '') + ' (KW ' + isoWeek(big.d) + ')') : '')
     + repRow('Häufigster Ladetag', WEEKDAYS[wdTop] + ' (' + wd[wdTop] + ' von ' + r.charges.length + ')')
-    + (homeRep ? repRow('Ø Ladedauer', durHm(avgMin * 60000) + ' h') : '')
+    + (hc.length ? repRow('Ø Ladedauer' + (repPlace === 'all' ? ' (Zuhause)' : ''), durHm(avgMin * 60000) + ' h') : '')
     + repRow('Jahr bisher', eur(ytdCost) + ' · ' + fmt(ytdKwh, 0) + ' kWh');
 
   /* Hinweise zur Datenbasis */
@@ -1906,6 +1918,8 @@ function renderReport() {
   if (r.nKm === 0) msgs.push('Kein km-Stand erfasst – Verbrauch pro 100 km nicht berechenbar.');
   else if (r.nKm < nc) msgs.push('Bei ' + (nc - r.nKm) + ' von ' + nc + ' Ladungen fehlt der km-Stand, der Verbrauch beruht auf ' + r.nKm + ' Ladungen.');
   if (r.nSoc > 0 && r.nSoc < nc) msgs.push('Der Ladeverlust beruht auf ' + r.nSoc + ' von ' + nc + ' Ladungen.');
+  const noKwh = r.charges.filter(c => !isHome(c.r) && !(c.r.consumedSinceLast > 0)).length;
+  if (noKwh) msgs.push(noKwh + (noKwh === 1 ? ' Ladung' : ' Ladungen') + ' bei Bosch/Unterwegs ohne kWh-Angabe: nicht in kWh und Kosten enthalten.');
   const ign = new Set(load(DQ_KEY, [])), s0 = new Date(y, m, 1), e0 = new Date(y, m + 1, 1);
   const dq = rs.length > 1 ? dataChecks(rs).filter(f => { const d = new Date(rs[f.i].date); return !ign.has(f.id + ':' + f.code) && d >= s0 && d < e0; }).length : 0;
   if (dq) msgs.push(dq + (dq === 1 ? ' Hinweis' : ' Hinweise') + ' aus der Datenprüfung offen.');
@@ -1913,9 +1927,9 @@ function renderReport() {
 
   /* Ladeliste (nur im PDF/Druck sichtbar) */
   const th = 'text-left font-medium py-1 border-b border-slate-300', td = 'py-1 border-b border-slate-200';
-  $('rep-list').innerHTML = `<p class="text-sm mb-2">Alle Ladungen im ${MONTHS_LONG[m]} ${y}</p><table class="w-full text-xs"><thead><tr><th class="${th}">Datum</th><th class="${th} text-right">kWh</th><th class="${th} text-right">Kosten</th><th class="${th} text-right">Dauer</th><th class="${th} text-right">km</th></tr></thead><tbody>`
-    + r.charges.map(c => `<tr><td class="${td}">${c.d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}, ${c.d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</td><td class="${td} text-right">${c.r.consumedSinceLast > 0 ? fmt(c.r.consumedSinceLast, 1) : '–'}</td><td class="${td} text-right">${homeRep || (c.r.consumedSinceLast > 0 && c.r.pricePerKwh != null) ? eur(c.r.cost) : '–'}</td><td class="${td} text-right">${isHome(c.r) ? chargeDurationOf(c.r) : '–'}</td><td class="${td} text-right">${c.st.km ? fmt(c.st.km, 0) : '–'}</td></tr>`).join('')
-    + `<tr class="font-semibold"><td class="py-1">Summe</td><td class="py-1 text-right">${fmt(r.kwh, 1)}</td><td class="py-1 text-right">${eur(r.cost)}</td><td></td><td class="py-1 text-right">${r.km ? fmt(r.km, 0) : '–'}</td></tr></tbody></table>`;
+  $('rep-list').innerHTML = `<p class="text-sm mb-2">Alle Ladungen im ${MONTHS_LONG[m]} ${y}</p><table class="w-full text-xs"><thead><tr><th class="${th}">Datum</th>${repPlace === 'all' ? `<th class="${th}">Ort</th>` : ''}<th class="${th} text-right">kWh</th><th class="${th} text-right">Kosten</th><th class="${th} text-right">Dauer</th><th class="${th} text-right">km</th></tr></thead><tbody>`
+    + r.charges.map(c => `<tr><td class="${td}">${c.d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}, ${c.d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</td>${repPlace === 'all' ? `<td class="${td}">${PLACES[placeOf(c.r)]}</td>` : ''}<td class="${td} text-right">${c.r.consumedSinceLast > 0 ? fmt(c.r.consumedSinceLast, 1) : '–'}</td><td class="${td} text-right">${isHome(c.r) || (c.r.consumedSinceLast > 0 && c.r.pricePerKwh != null) ? eur(c.r.cost) : '–'}</td><td class="${td} text-right">${isHome(c.r) ? chargeDurationOf(c.r) : '–'}</td><td class="${td} text-right">${c.st.km ? fmt(c.st.km, 0) : '–'}</td></tr>`).join('')
+    + `<tr class="font-semibold"><td class="py-1">Summe</td>${repPlace === 'all' ? '<td></td>' : ''}<td class="py-1 text-right">${fmt(r.kwh, 1)}</td><td class="py-1 text-right">${eur(r.cost)}</td><td></td><td class="py-1 text-right">${r.km ? fmt(r.km, 0) : '–'}</td></tr></tbody></table>`;
 }
 document.querySelectorAll('.rep-place-btn').forEach(b => b.addEventListener('click', () => { repPlace = b.dataset.place; renderReport(); }));
 $('rep-prev').addEventListener('click', () => { const d = new Date(reportYM.y, reportYM.m - 1, 1); reportYM = { y: d.getFullYear(), m: d.getMonth() }; renderReport(); });
@@ -1965,6 +1979,7 @@ $('rep-img').addEventListener('click', () => {
 
 if (getLive()) tickLive();                              // Live-Modus nach Neuladen fortsetzen
 $('scan-card').classList.toggle('hidden', !ENABLE_AI_SCAN);
+setCapPlace(capPlace);                                   // Reiter "Zuhause" gleich beim Start hervorheben
 showView('dashboard');
 </script>
 <script type="module">
