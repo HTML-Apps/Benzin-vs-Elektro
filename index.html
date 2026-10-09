@@ -116,6 +116,8 @@
       </div>
     </div>
 
+    <div id="dash-place" class="flex bg-slate-200 dark:bg-slate-800 rounded-xl p-1"><button type="button" data-place="home" class="dash-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Zuhause</button><button type="button" data-place="bosch" class="dash-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Bosch</button><button type="button" data-place="away" class="dash-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Unterwegs</button></div>
+
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mb-3" id="range-switch">
         <button data-range="week"  class="range-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Woche</button>
@@ -163,9 +165,10 @@
 
   <!-- ============ VIEW 2: ERFASSEN ============ -->
   <section id="view-capture" class="view hidden space-y-4">
-    <h1 class="text-xl font-semibold">Zählerstand erfassen</h1>
+    <h1 id="cap-title" class="text-xl font-semibold">Zählerstand erfassen</h1>
+    <div id="cap-place" class="flex bg-slate-200 dark:bg-slate-800 rounded-xl p-1"><button type="button" data-place="home" class="cap-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Zuhause</button><button type="button" data-place="bosch" class="cap-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Bosch</button><button type="button" data-place="away" class="cap-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Unterwegs</button></div>
 
-    <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+    <div id="cap-meter-card" class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <p class="flex items-center justify-between h-7 text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Zählerstand</span></p>
       <div class="flex gap-2 items-stretch">
         <div id="seg2-box" class="flex-1 min-w-0 lcd relative rounded-xl px-3 py-4 flex items-end justify-end gap-2 focus-within:ring-2 focus-within:ring-blue-800 focus-within:shadow-[0_0_14px_3px_rgba(30,64,175,0.7)]">
@@ -179,6 +182,15 @@
         </div>
       </div>
       <p id="reading-calc" class="text-sm text-sm text-slate-500 dark:text-slate-400 text-right mt-2 min-h-[1.25rem]"></p>
+    </div>
+
+    <div id="cap-away-card" class="hidden rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Geladen (optional)</p>
+      <div class="grid grid-cols-2 gap-2">
+        <div><label for="kwh-input" class="text-xs text-slate-500 dark:text-slate-400">kWh laut Säule</label><input id="kwh-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 10,4" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        <div><label for="price-input" class="text-xs text-slate-500 dark:text-slate-400">Preis €/kWh</label><input id="price-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 0,45" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+      </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Kein Zählerstand nötig. Akku-Start und -Ende genügen für den Verbrauch. Mit Preis (auch 0 für gratis) wird €/100 km dieses Eintrags berechnet.</p>
     </div>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
@@ -276,9 +288,11 @@
       <button id="rep-next" type="button" aria-label="Nächster Monat" class="print:invisible w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center active:scale-95 transition disabled:opacity-30"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
     </div>
 
+    <div id="rep-place" class="print:hidden flex bg-slate-200 dark:bg-slate-800 rounded-xl p-1"><button type="button" data-place="home" class="rep-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Zuhause</button><button type="button" data-place="bosch" class="rep-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Bosch</button><button type="button" data-place="away" class="rep-place-btn flex-1 py-1.5 rounded-lg text-sm font-medium">Unterwegs</button></div>
+
     <div id="rep-empty" class="hidden rcard rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-6 text-center">
-      <p class="font-medium">Keine Ladungen in diesem Monat</p>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Sobald du einen Zählerstand erfasst, erscheint hier der Bericht.</p>
+      <p id="rep-empty-t" class="font-medium">Keine Ladungen in diesem Monat</p>
+      <p id="rep-empty-s" class="text-sm text-slate-500 dark:text-slate-400 mt-1">Sobald du einen Zählerstand erfasst, erscheint hier der Bericht.</p>
     </div>
 
     <div id="rep-body" class="space-y-4">
@@ -432,6 +446,36 @@ function save(key, value) {
   catch (e) { console.error('localStorage schreiben fehlgeschlagen', e); alert('Speichern im Browser nicht möglich (Speicher voll oder gesperrt).'); return false; }
 }
 const getReadings = () => load(KEY_READINGS, []);
+
+/* =====================================================================
+   Ladeorte: Zuhause (eigener Zähler) | Bosch | Unterwegs.
+   Einträge ohne Feld "place" gelten als Zuhause (alte Daten bleiben gültig).
+   Zuhause: totalReading/consumedSinceLast/cost kommen vom Zähler (Kette nur über Zuhause-Einträge).
+   Bosch/Unterwegs: kein Zähler. consumedSinceLast = geladene kWh (0 = unbekannt), cost = kWh x pricePerKwh (0 = unbekannt),
+   totalReading = letzter Zuhause-Stand (nur mitgeführt, damit ältere App-Versionen die Kette nicht zerlegen).
+   Km- und Akku-Kette (Verbrauch/100 km) läuft dagegen über ALLE Einträge, weil das Auto durchgehend ist.
+   ===================================================================== */
+const PLACES = { home: 'Zuhause', bosch: 'Bosch', away: 'Unterwegs' };
+const PLACE_KEYS = Object.keys(PLACES);
+const placeOf = (r) => PLACES[r?.place] ? r.place : 'home';
+const isHome = (r) => placeOf(r) === 'home';
+const prevHomeIdx = (rs, i) => { for (let j = i - 1; j >= 0; j--) if (isHome(rs[j])) return j; return -1; };   // Vorgänger am Zähler
+const lastHome = (rs = getReadings()) => { const j = prevHomeIdx(rs, rs.length); return j >= 0 ? rs[j] : null; };
+/** Erster Zuhause-Eintrag ohne Zähler-Reset = reiner Startwert ohne Ladung. */
+const isStartRow = (rs, i) => isHome(rs[i]) && prevHomeIdx(rs, i) < 0 && !rs[i].meterReset;
+/** Zählt der Eintrag als Ladung? Zuhause: geladene kWh > 0 (kein Startwert); Bosch/Unterwegs: jeder Eintrag. */
+const isCharge = (rs, i) => isHome(rs[i]) ? !isStartRow(rs, i) && rs[i].consumedSinceLast > 0 : true;
+/** Preis pro kWh dieses Eintrags: Zuhause aus den gespeicherten Werten (Einstellungen zum Zeitpunkt), sonst der eingetragene Preis (oder null). */
+const unitOf = (r) => isHome(r) ? (r.consumedSinceLast > 0 ? r.cost / r.consumedSinceLast : getSettings().price) : (r.pricePerKwh ?? null);
+const PLACE_BADGE = { bosch: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200', away: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200' };
+let capPlace = 'home', dashPlace = 'home', repPlace = 'home';      // gewählter Ladeort in Erfassen / Dashboard / Bericht
+/** Hebt in einer Segment-Auswahl (Buttons mit data-place) den aktiven Ort hervor. */
+function segPaint(sel, active) {
+  document.querySelectorAll(sel).forEach(b => {
+    const on = b.dataset.place === active;
+    b.classList.toggle('bg-white', on); b.classList.toggle('dark:bg-slate-700', on); b.classList.toggle('shadow-sm', on);
+  });
+}
 const DEFAULT_BATTERY_KWH = 52;   // Standardwert (nutzbare Kapazität Enyaq iV 50); einstellbar unter Einstellungen
 const batteryKwh = () => { const v = Number(getSettings().battery); return v > 0 ? v : DEFAULT_BATTERY_KWH; };
 /** Vorbelegung: letzter bekannter km-Stand als grauer Hinweis (Platzhalter), Akku Ende standardmäßig 80 %. */
@@ -489,7 +533,7 @@ $('km-edit').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.pre
 function paintReading() {
   const raw = $('reading-input').value, v = parseNum(raw), ok = raw.trim() !== '' && isFinite(v) && v >= 0;
   $('seg2-on').textContent = ok ? Math.min(v, 999999.9).toFixed(1).padStart(8, '0') : '';       // wie im Dashboard; leer = nur Geistersegmente
-  const last = getReadings().slice(-1)[0], calc = $('reading-calc');
+  const last = lastHome(), calc = $('reading-calc');
   const kwh = ok && last ? Math.round((v - last.totalReading) * 10) / 10 : null;
   calc.className = 'text-sm text-right mt-2 min-h-[1.25rem] ' + (kwh != null && kwh < 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400');
   calc.textContent = kwh == null ? (last ? 'Letzter Stand: ' + fmt(last.totalReading) + ' kWh' : '')
@@ -517,11 +561,11 @@ function dataChecks(rs) {
   const out = [], add = (i, code, msg) => out.push({ i, code, id: rs[i].id, msg });
   let maxKm = null;
   rs.forEach((r, i) => {
-    const s = entryStats(rs, i);
-    if (i > 0 || r.meterReset) {                       // erster Eintrag zählt nur als Ladung, wenn der Zähler bei 0 begann
-      if (r.consumedSinceLast === 0) add(i, 'zero', 'Keine kWh seit dem letzten Eintrag – doppelt gespeichert oder der Zähler nicht abgelesen?');
-      if (r.consumedSinceLast > capOf(r) * 1.3) add(i, 'big', fmt(r.consumedSinceLast) + ' kWh sind mehr als die Batteriekapazität – Zähler zurückgesetzt, aber nicht markiert?');
-      const gap = i > 0 ? Date.parse(r.date) - Date.parse(rs[i - 1].date) : -1;
+    const s = entryStats(rs, i), home = isHome(r);
+    if (home && !isStartRow(rs, i) && r.consumedSinceLast === 0) add(i, 'zero', 'Keine kWh seit dem letzten Eintrag – doppelt gespeichert oder der Zähler nicht abgelesen?');
+    if (r.consumedSinceLast > capOf(r) * 1.3) add(i, 'big', fmt(r.consumedSinceLast) + (home ? ' kWh sind mehr als die Batteriekapazität – Zähler zurückgesetzt, aber nicht markiert?' : ' kWh sind mehr als die Batteriekapazität – kWh-Angabe prüfen.'));
+    if (i > 0 && placeOf(r) === placeOf(rs[i - 1])) {
+      const gap = Date.parse(r.date) - Date.parse(rs[i - 1].date);
       if (gap >= 0 && gap < 600000) add(i, 'dup', 'Weniger als 10 Minuten nach dem vorherigen Eintrag – doppelt erfasst?');
     }
     if (s.gap) add(i, 'gap', 'Akku-Start (' + r.socStart + ' %) liegt über dem Ende der letzten Ladung (' + rs[i - 1].socEnd + ' %) – dazwischen wurde vermutlich woanders geladen. Der Verbrauch dieser Strecke ist nicht berechenbar.');
@@ -532,7 +576,7 @@ function dataChecks(rs) {
       maxKm = Math.max(maxKm ?? 0, r.odometerKm);
     }
     const ms = realMsOf(r);
-    if (ms && r.consumedSinceLast > 0) {
+    if (home && ms && r.consumedSinceLast > 0) {
       const kw = r.consumedSinceLast / (ms / 3600000), ref = chargePowerKw();
       if (kw > ref * 1.3 || kw < ref * 0.6) add(i, 'power', 'Ø Leistung ' + fmt(kw, 1) + ' kW weicht stark von den eingestellten ' + fmt(ref, 1) + ' kW ab.');
     }
@@ -563,7 +607,7 @@ $('dq-list').addEventListener('click', (e) => {
 });
 
 function nudgeReading(delta) {                                           // Zählerstand in 0,1-Schritten korrigieren
-  const raw = $('reading-input').value, v = parseNum(raw), last = getReadings().slice(-1)[0];
+  const raw = $('reading-input').value, v = parseNum(raw), last = lastHome();
   const base = raw.trim() !== '' && isFinite(v) ? v : (last ? last.totalReading : 0);
   $('reading-input').value = Math.max(0, Math.round((base + delta) * 10) / 10).toFixed(1);
   delete $('reading-input').dataset.live; paintReading();
@@ -602,7 +646,7 @@ function updateCaptureDefaults() {
   const withKm = getReadings().filter(r => r.odometerKm != null), last = withKm[withKm.length - 1];
   $('km-input').placeholder = last ? String(last.odometerKm) : 'optional';
   if ($('soc1-input').value === '') $('soc1-input').value = '80';
-  const live = getLive();                                // laufende/beendete Live-Ladung: Felder vorbelegen (Zählerstand bitte gegenlesen)
+  const live = capPlace === 'home' ? getLive() : null;    // laufende/beendete Live-Ladung (nur Zuhause): Felder vorbelegen (Zählerstand bitte gegenlesen)
   if (live?.kwhTarget != null) {
     const kwh = liveKwh(live);
     const done = kwh >= live.kwhTarget;
@@ -622,7 +666,7 @@ const effCache = new WeakMap();
 function avgEff(rs) {
   if (effCache.has(rs)) return effCache.get(rs);
   let chg = 0, st = 0;
-  rs.forEach(r => { if (r.socStart != null && r.socEnd != null && r.socEnd > r.socStart && r.consumedSinceLast > 0) { chg += r.consumedSinceLast; st += (r.socEnd - r.socStart) / 100 * capOf(r); } });
+  rs.forEach(r => { if (isHome(r) && r.socStart != null && r.socEnd != null && r.socEnd > r.socStart && r.consumedSinceLast > 0) { chg += r.consumedSinceLast; st += (r.socEnd - r.socStart) / 100 * capOf(r); } });
   const eff = chg > 0 ? Math.min(1, Math.max(0.6, st / chg)) : 0.9;
   effCache.set(rs, eff); return eff;
 }
@@ -630,41 +674,47 @@ function avgEff(rs) {
 /** Kennzahlen eines Eintrags.
  *  Verbrauch/100 km (genau, method 'soc'): Energie, die zwischen zwei Ladungen aus dem Akku entnommen wurde = (Ende-% der letzten Ladung − Start-% dieser Ladung) x Kapazität,
  *  geteilt durch den Wirkungsgrad = Verbrauch an der Steckdose. So spielt es keine Rolle, ob zuletzt auf 80 oder 90 % geladen wurde.
- *  Fallback (method 'charge'): geladene kWh dieser Ladung / km – nur richtig, wenn jedes Mal auf denselben Stand geladen wird. */
+ *  Vorgänger ist immer der direkt davor erfasste Eintrag, egal wo geladen wurde (Zuhause, Bosch, Unterwegs): das Auto ist durchgehend.
+ *  Fallback (method 'charge'): geladene kWh dieser Ladung / km – nur richtig, wenn jedes Mal auf denselben Stand geladen wird.
+ *  Preis (unit): Zuhause aus dem Eintrag (Einstellungen), Bosch/Unterwegs der im Eintrag hinterlegte Preis; ohne Preis kein €/100 km. */
 function entryStats(rs, i) {
-  const r = rs[i], prev = i > 0 ? rs[i - 1] : null, s = {};
-  if (prev && r.odometerKm != null && prev.odometerKm != null && r.odometerKm > prev.odometerKm && r.consumedSinceLast > 0) {
+  const r = rs[i], prev = i > 0 ? rs[i - 1] : null, s = {}, home = isHome(r), kwh = r.consumedSinceLast;
+  const charge = home ? kwh > 0 : true;                                        // Zuhause zählt nur mit geladenen kWh; Bosch/Unterwegs ist jeder Eintrag eine Ladung
+  if (prev && r.odometerKm != null && prev.odometerKm != null && r.odometerKm > prev.odometerKm && charge) {
     s.km = r.odometerKm - prev.odometerKm;
     if (prev.socEnd != null && r.socStart != null) {
       if (r.socStart <= prev.socEnd) {
         s.method = 'soc';
         s.usedBat = (prev.socEnd - r.socStart) / 100 * capOf(r);          // aus dem Akku entnommen
-        s.usedWall = s.usedBat / avgEff(rs);                              // entspricht an der Steckdose
+        s.usedWall = s.usedBat / avgEff(rs);                              // entspricht an der Steckdose (Wirkungsgrad aus den Zuhause-Ladungen)
         s.rough = s.usedBat < 3;                                          // 1 % Rundung ≈ 0,5 kWh -> bei kleinen Entnahmen ungenau
       } else s.gap = true;                                                // Akku höher als nach der letzten Ladung: dazwischen wurde woanders geladen
-    } else { s.method = 'charge'; s.usedWall = r.consumedSinceLast; }
+    } else if (kwh > 0) { s.method = 'charge'; s.usedWall = kwh; }
     if (s.usedWall != null) {
       s.kwh100 = s.usedWall / s.km * 100;
-      s.cost100 = s.usedWall * (r.cost / r.consumedSinceLast) / s.km * 100;
+      s.unit = unitOf(r);
+      s.cost100 = s.unit != null ? s.usedWall * s.unit / s.km * 100 : null;
     }
   }
-  if (r.socStart != null && r.socEnd != null && r.socEnd > r.socStart && r.consumedSinceLast > 0) {
+  if (r.socStart != null && r.socEnd != null && r.socEnd > r.socStart && kwh > 0) {
     s.stored = (r.socEnd - r.socStart) / 100 * capOf(r);            // tatsächlich in der Batterie angekommene Energie
-    s.loss = (1 - s.stored / r.consumedSinceLast) * 100;                    // Ladeverlust in %
+    s.loss = (1 - s.stored / kwh) * 100;                            // Ladeverlust in %
   }
   return s;
 }
 
-/** Summiert den Verbrauch über Einträge: genaue Werte (Akku-%) werden bevorzugt, Näherungen nur, wenn es keine genauen gibt. */
+/** Summiert den Verbrauch über Einträge: genaue Werte (Akku-%) werden bevorzugt, Näherungen nur, wenn es keine genauen gibt.
+ *  €/100 km nur aus Strecken mit bekanntem Preis (kmC). */
 function consumptionTotals(rs, idxs) {
-  const acc = { soc: { km: 0, kwh: 0, cost: 0, n: 0 }, charge: { km: 0, kwh: 0, cost: 0, n: 0 } };
+  const acc = { soc: { km: 0, kwh: 0, cost: 0, kmC: 0, n: 0 }, charge: { km: 0, kwh: 0, cost: 0, kmC: 0, n: 0 } };
   idxs.forEach(i => {
     const s = entryStats(rs, i); if (s.usedWall == null) return;
-    const a = acc[s.method]; a.km += s.km; a.kwh += s.usedWall; a.cost += s.usedWall * rs[i].cost / rs[i].consumedSinceLast; a.n++;
+    const a = acc[s.method]; a.km += s.km; a.kwh += s.usedWall; a.n++;
+    if (s.unit != null) { a.cost += s.usedWall * s.unit; a.kmC += s.km; }
   });
   const use = acc.soc.n ? acc.soc : acc.charge;
   return { km: use.km, kwh: use.kwh, cost: use.cost, n: use.n, approx: !acc.soc.n && acc.charge.n > 0,
-           kwh100: use.km ? use.kwh / use.km * 100 : null, cost100: use.km ? use.cost / use.km * 100 : null };
+           kwh100: use.km ? use.kwh / use.km * 100 : null, cost100: use.kmC ? use.cost / use.kmC * 100 : null };
 }
 
 /** Einziger Schreibweg für Zählerstände: lokaler Cache (localStorage) + Firestore (falls angemeldet, nur Änderungen). */
@@ -836,29 +886,41 @@ function flash(el, text, ok) {
 }
 
 $('btn-save').addEventListener('click', () => {
-  const value = Math.round(parseNum($('reading-input').value) * 10) / 10;
-  if (!isFinite(value) || value < 0) { flash($('save-msg'), 'Bitte einen gültigen Zählerstand eingeben.', false); return; }
-
-  const readings = getReadings();
-  const prev = readings[readings.length - 1];
-  let reset = false;                                     // Zähler zurückgesetzt? Dann zählt die Ladung ab 0
-  if (prev && value < prev.totalReading) {
-    if (!confirm('Der Wert (' + fmt(value) + ') ist kleiner als der letzte Stand (' + fmt(prev.totalReading) + ').\n\nWurde der Zähler zurückgesetzt (Start bei 0)?\nOK = ja, die Ladung wird ab 0 gerechnet.\nAbbrechen = Eingabe prüfen.')) return;
-    reset = true;
-  }
-  const consumed = reset ? value : (prev ? Math.max(0, Math.round((value - prev.totalReading) * 10) / 10) : 0);   // Differenz zum Vorgänger
-  const cost = consumed * getSettings().price;
+  const readings = getReadings(), place = capPlace, home = place === 'home';
   const km = optNum($('km-input').value), s0 = optNum($('soc0-input').value), s1 = optNum($('soc1-input').value);
   if ([km, s0, s1].some(Number.isNaN) || (km != null && km < 0) || [s0, s1].some(v => v != null && (v < 0 || v > 100)) || (s0 != null && s1 != null && s1 <= s0)) {
     flash($('save-msg'), 'Bitte km-Stand und Akku-Prozente prüfen (0–100 %, Ende größer als Start).', false); return;
   }
-  const entry = { id: Date.now(), date: new Date().toISOString(), totalReading: value, consumedSinceLast: consumed, cost };
+
+  let entry, msg;
+  if (home) {
+    const value = Math.round(parseNum($('reading-input').value) * 10) / 10;
+    if (!isFinite(value) || value < 0) { flash($('save-msg'), 'Bitte einen gültigen Zählerstand eingeben.', false); return; }
+    const prev = lastHome(readings);                      // Vorgänger am Zähler (Bosch/Unterwegs-Einträge zählen nicht)
+    let reset = false;                                    // Zähler zurückgesetzt? Dann zählt die Ladung ab 0
+    if (prev && value < prev.totalReading) {
+      if (!confirm('Der Wert (' + fmt(value) + ') ist kleiner als der letzte Stand (' + fmt(prev.totalReading) + ').\n\nWurde der Zähler zurückgesetzt (Start bei 0)?\nOK = ja, die Ladung wird ab 0 gerechnet.\nAbbrechen = Eingabe prüfen.')) return;
+      reset = true;
+    }
+    const consumed = reset ? value : (prev ? Math.max(0, Math.round((value - prev.totalReading) * 10) / 10) : 0);   // Differenz zum Vorgänger
+    const cost = consumed * getSettings().price;
+    entry = { id: Date.now(), date: new Date().toISOString(), totalReading: value, consumedSinceLast: consumed, cost };
+    if (reset) entry.meterReset = true;
+    msg = 'Gespeichert: ' + fmt(consumed) + ' kWh, ' + eur(cost);
+  } else {
+    if (s0 == null || s1 == null) { flash($('save-msg'), 'Bitte Akku-Start und Akku-Ende angeben – sie verbinden diese Ladung mit der Verbrauchsrechnung.', false); return; }
+    const kwh = optNum($('kwh-input').value), price = optNum($('price-input').value);
+    if ([kwh, price].some(Number.isNaN) || (kwh != null && kwh < 0) || (price != null && price < 0)) { flash($('save-msg'), 'Bitte kWh und Preis prüfen (nicht negativ).', false); return; }
+    const prevH = lastHome(readings), cost = kwh != null && price != null ? kwh * price : 0;
+    entry = { id: Date.now(), date: new Date().toISOString(), place, totalReading: prevH ? prevH.totalReading : 0, consumedSinceLast: kwh ?? 0, cost };
+    if (price != null) entry.pricePerKwh = price;
+    msg = 'Gespeichert (' + PLACES[place] + '): ' + (kwh != null ? fmt(kwh) + ' kWh' : s0 + ' → ' + s1 + ' %') + (cost > 0 ? ', ' + eur(cost) : '');
+  }
   if (km != null) entry.odometerKm = km;                // optionale Felder nur setzen, wenn vorhanden (Firestore verbietet undefined)
   if (s0 != null) entry.socStart = s0;
   entry.capacityKwh = batteryKwh();                      // Kapazität zum Zeitpunkt der Ladung festhalten
   if (s1 != null) entry.socEnd = s1;
-  if (reset) entry.meterReset = true;
-  const live = getLive();                                // abgeschlossene Live-Ladung: echte Start-/Endzeit und Leistung festhalten
+  const live = home ? getLive() : null;                  // abgeschlossene Live-Ladung (nur Zuhause): echte Start-/Endzeit und Leistung festhalten
   if (live && live.kwhTarget != null && liveKwh(live) >= live.kwhTarget) {
     const end = Math.min(Date.now(), liveFinishAt(live));
     if (end > live.startedAt) { entry.chargeStart = new Date(live.startedAt).toISOString(); entry.chargeEnd = new Date(end).toISOString(); }
@@ -868,17 +930,39 @@ $('btn-save').addEventListener('click', () => {
   readings.push(entry);
   const status = commitReadings(readings);
   if (!status) return;
-  stopLive(false);                                       // echter Wert erfasst -> Simulation beenden
+  if (home) stopLive(false);                             // echter Wert erfasst -> Simulation beenden
 
-  const msg = 'Gespeichert: ' + fmt(consumed) + ' kWh, ' + eur(cost);
   flash($('save-msg'), msg + (window.cloud?.isSignedIn() ? ' · Cloud: wird übertragen …' : ' · nur lokal (nicht bei Google angemeldet)'), true);
   status.then(s => {                                     // Ergebnis der Cloud-Übertragung sichtbar machen
     if (s === 'cloud') flash($('save-msg'), msg + ' · Cloud ✓', true);
     else if (s.startsWith('error:')) flash($('save-msg'), msg + ' · Cloud-Fehler: ' + s.slice(6), false);
   });
   $('save-msg').classList.remove('hidden');
-  $('reading-input').value = ''; ['reading-input', 'km-input', 'soc0-input', 'soc1-input'].forEach(id => { $(id).value = ''; delete $(id).dataset.live; delete $(id).dataset.manual; }); closeKmEdit(); updateCaptureDefaults();
+  ['reading-input', 'km-input', 'soc0-input', 'soc1-input', 'kwh-input', 'price-input'].forEach(id => { $(id).value = ''; delete $(id).dataset.live; delete $(id).dataset.manual; delete $(id).dataset.auto; });
+  closeKmEdit(); setCapPlace('home');                    // nächste Erfassung startet wieder bei Zuhause
 });
+
+/** Ladeort in der Erfassen-Maske wählen: Zuhause = Zählerstand, Bosch/Unterwegs = optional kWh und Preis (kein Zähler). */
+function setCapPlace(p) {
+  capPlace = PLACES[p] ? p : 'home';
+  const home = capPlace === 'home';
+  segPaint('.cap-place-btn', capPlace);
+  $('cap-meter-card').classList.toggle('hidden', !home);
+  $('cap-away-card').classList.toggle('hidden', home);
+  $('cap-title').textContent = home ? 'Zählerstand erfassen' : 'Ladung erfassen: ' + PLACES[capPlace];
+  if (!home) {
+    ['soc0-input', 'soc1-input', 'km-input'].forEach(id => { if ($(id).dataset.live) { $(id).value = ''; delete $(id).dataset.live; } });   // Live-Vorbelegung gilt nur für Zuhause
+    const pi = $('price-input');
+    if (pi.value === '' || pi.dataset.auto) {            // Preis der letzten Ladung an diesem Ort vorschlagen
+      const last = getReadings().reverse().find(r => placeOf(r) === capPlace && r.pricePerKwh != null);
+      pi.value = last ? String(last.pricePerKwh).replace('.', ',') : '';
+      if (last) pi.dataset.auto = '1'; else delete pi.dataset.auto;
+    }
+  }
+  updateCaptureDefaults();
+}
+document.querySelectorAll('.cap-place-btn').forEach(b => b.addEventListener('click', () => setCapPlace(b.dataset.place)));
+$('price-input').addEventListener('input', (e) => { delete e.target.dataset.auto; });
 
 /* =====================================================================
    Einstellungen
@@ -935,17 +1019,19 @@ function buildBuckets(kind, readings) {
   return out.map(b => ({ ...b, kwh: 0, cost: 0 }));
 }
 
+const RANGE_TXT = { week: 'der letzten 8 Wochen (Wochenbeginn)', month: 'der letzten 12 Monate', year: 'pro Jahr' };
 function renderChart() {
-  const readings = getReadings();
+  const readings = getReadings().filter(r => placeOf(r) === dashPlace), home = dashPlace === 'home';
   const buckets = buildBuckets(range, readings);
-  readings.forEach(r => {                                  // Verbrauch dem Zeitraum des Ablesedatums zuordnen
+  readings.forEach(r => {                                  // Zuhause: Verbrauch am Zähler; Bosch/Unterwegs: eingetragene kWh – jeweils dem Zeitraum des Datums zuordnen
     const d = new Date(r.date), b = buckets.find(b => d >= b.s && d < b.e);
     if (b) { b.kwh += r.consumedSinceLast; b.cost += r.cost; }
   });
   const hasData = buckets.some(b => b.kwh > 0);
+  $('chart-empty').textContent = home ? 'Noch keine Daten. Erfasse mindestens zwei Zählerstände.' : 'Noch keine Ladungen mit kWh-Angabe bei „' + PLACES[dashPlace] + '“. Trage beim Erfassen die kWh laut Säule ein.';
   $('chart-empty').classList.toggle('hidden', hasData);
   $('chart').parentElement.classList.toggle('hidden', !hasData);
-  $('chart-title').textContent = { week: 'Verbrauch der letzten 8 Wochen (Wochenbeginn)', month: 'Verbrauch der letzten 12 Monate', year: 'Verbrauch pro Jahr' }[range];
+  $('chart-title').textContent = home ? 'Verbrauch ' + RANGE_TXT[range] : PLACES[dashPlace] + ' · geladen ' + RANGE_TXT[range];
 
   document.querySelectorAll('.range-btn').forEach(b => {
     const on = b.dataset.range === range;
@@ -1003,7 +1089,7 @@ const liveKwh = (live, now = Date.now()) => {                         // Anker (
 /** Ladewirkungsgrad aus der Historie (gespeicherte Energie / Zählerenergie); ohne Daten Standardwert 90 %. */
 function chargeEfficiency() {
   const rs = getReadings(); let chg = 0, st = 0;
-  rs.forEach((r, i) => { const s = entryStats(rs, i); if (s.stored !== undefined) { chg += r.consumedSinceLast; st += s.stored; } });
+  rs.forEach((r, i) => { const s = entryStats(rs, i); if (isHome(r) && s.stored !== undefined) { chg += r.consumedSinceLast; st += s.stored; } });
   return chg > 0 ? { eff: Math.min(1, Math.max(0.5, st / chg)), hist: true } : { eff: 0.9, hist: false };
 }
 /** Prognose für Start- und Ziel-%: Zähler-kWh = Batterieenergie / Wirkungsgrad; Dauer = kWh / 7 kW. */
@@ -1049,7 +1135,7 @@ function renderLive() {
 function tickLive() { renderLive(); if (!liveTimer) liveTimer = setInterval(renderLive, 1000); }
 
 function startLive(socStart, socTarget, odometerKm = null) {
-  const t0 = Date.now(), readings = getReadings(), last = readings[readings.length - 1], f = liveForecast(socStart, socTarget);
+  const t0 = Date.now(), readings = getReadings(), last = lastHome(readings), f = liveForecast(socStart, socTarget);
   const state = { startedAt: t0, power: chargePowerKw(), anchorT: t0, anchorKwh: 0, lastPollAt: t0, syncNote: '',
                   lastCaptured: carData?.capturedAt ? (new Date(carData.capturedAt).getTime() || 0) : 0, baseReading: last ? last.totalReading : 0, price: getSettings().price,
                   socStart, socTarget, odometerKm, kwhTarget: f.kwh, eff: f.eff, battery: batteryKwh() };       // alles Nötige beim Start einfrieren
@@ -1156,8 +1242,8 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && ge
 let statRange = 'week';
 
 function renderStats() {
-  const readings = getReadings();
-  const charges = readings.filter((r, i) => (i > 0 || r.meterReset) && r.consumedSinceLast > 0);
+  const readings = getReadings(), own = readings.filter(r => placeOf(r) === dashPlace);
+  const charges = readings.filter((r, i) => placeOf(r) === dashPlace && isCharge(readings, i));
   document.querySelectorAll('.stat-btn').forEach(b => {
     const on = b.dataset.stat === statRange;
     b.classList.toggle('bg-white', on); b.classList.toggle('dark:bg-slate-700', on); b.classList.toggle('shadow-sm', on);
@@ -1166,7 +1252,7 @@ function renderStats() {
   const names = { week: 'Woche', month: 'Monat' };
   label.textContent = statRange === 'year' ? 'Ladungen im Jahr ' + new Date().getFullYear() + ' (gesamt)' : 'Ø Ladungen pro ' + names[statRange];
 
-  if (!charges.length) { value.textContent = '–'; note.textContent = 'Noch keine Ladungen erfasst.'; return; }
+  if (!charges.length) { value.textContent = '–'; note.textContent = 'Noch keine Ladungen' + (dashPlace === 'home' ? '' : ' bei „' + PLACES[dashPlace] + '“') + ' erfasst.'; return; }
 
   if (statRange === 'year') {
     const byYear = {};
@@ -1176,7 +1262,7 @@ function renderStats() {
     const earlier = Object.keys(byYear).filter(y => +y !== current).sort().reverse().map(y => y + ': ' + byYear[y]).join(' · ');
     note.textContent = earlier ? 'Frühere Jahre – ' + earlier : '';
   } else {
-    const start = new Date(readings[0].date);
+    const start = new Date(own[0].date);
     const days = (Date.now() - start.getTime()) / 86400000;
     const unitDays = statRange === 'week' ? 7 : 365.25 / 12;
     value.textContent = fmt(charges.length / Math.max(1, days / unitDays), 1);
@@ -1186,18 +1272,19 @@ function renderStats() {
 }
 document.querySelectorAll('.stat-btn').forEach(b => b.addEventListener('click', () => { statRange = b.dataset.stat; renderStats(); }));
 
-function renderEfficiency() {                            // gewichteter Durchschnitt über alle Einträge mit den nötigen Daten
-  const rs = getReadings();
+function renderEfficiency() {                            // gewichteter Durchschnitt über die Einträge des gewählten Ladeorts
+  const rs = getReadings(), idxs = rs.map((_, i) => i).filter(i => placeOf(rs[i]) === dashPlace);
   let chg = 0, stored = 0, nSoc = 0;
-  rs.forEach((r, i) => {
+  idxs.forEach(i => {
     const s = entryStats(rs, i);
-    if (s.stored !== undefined) { chg += r.consumedSinceLast; stored += s.stored; nSoc++; }
+    if (s.stored !== undefined) { chg += rs[i].consumedSinceLast; stored += s.stored; nSoc++; }
   });
-  const t = consumptionTotals(rs, rs.map((_, i) => i)), nKm = t.n;
+  const t = consumptionTotals(rs, idxs), nKm = t.n;
   $('eff-kwh').textContent = t.km ? fmt(t.kwh100, 1) : '–';
-  $('eff-cost').textContent = t.km ? eur(t.cost100) : '–';
+  $('eff-cost').textContent = t.cost100 != null ? eur(t.cost100) : '–';
   $('eff-loss').textContent = chg ? fmt(Math.max(0, (1 - stored / chg) * 100), 0) + ' %' : '–';
-  $('eff-note').textContent = (nKm || nSoc) ? 'Basis: ' + nKm + ' Ladungen mit km-Stand' + (t.approx ? ' (grob, ohne Akku-%)' : '') + ', ' + nSoc + ' mit Akku-Stand'
+  const hint = dashPlace === 'home' ? '' : ' · €/100 km nur mit Preis, Ladeverlust nur mit kWh';
+  $('eff-note').textContent = (nKm || nSoc) ? 'Basis: ' + nKm + ' Ladungen mit km-Stand' + (t.approx ? ' (grob, ohne Akku-%)' : '') + ', ' + nSoc + ' mit Akku-Stand' + hint
                                               : 'Erfasse km-Stand und Akku-% bei den Ladungen, um Werte zu sehen.';
 }
 
@@ -1210,13 +1297,14 @@ function renderLossChart() {
   const rs = getReadings(), byMonth = {}, season = { summer: { chg: 0, st: 0 }, winter: { chg: 0, st: 0 } };
   let chgAll = 0, stAll = 0, lossCost = 0, n = 0;
   rs.forEach((r, i) => {
+    if (placeOf(r) !== dashPlace) return;
     const s = entryStats(rs, i); if (s.stored === undefined) return;       // nur Ladungen mit Start-/Ende-% und kWh
     const d = new Date(r.date), key = d.getFullYear() + '-' + d.getMonth(), m = (byMonth[key] = byMonth[key] || { chg: 0, st: 0 });
     m.chg += r.consumedSinceLast; m.st += s.stored;
     const sea = d.getMonth() >= 3 && d.getMonth() <= 8 ? season.summer : season.winter;
     sea.chg += r.consumedSinceLast; sea.st += s.stored;
     chgAll += r.consumedSinceLast; stAll += s.stored; n++;
-    lossCost += (r.consumedSinceLast - s.stored) * (r.cost / r.consumedSinceLast);           // Verlust-kWh x Preis dieser Ladung
+    lossCost += (r.consumedSinceLast - s.stored) * (unitOf(r) ?? 0);           // Verlust-kWh x Preis dieser Ladung (ohne Preis: 0)
   });
   const pct = (o) => o.chg > 0 ? fmt(Math.max(0, (1 - o.st / o.chg) * 100), 1) + ' %' : '–';
   $('loss-summer').textContent = pct(season.summer); $('loss-winter').textContent = pct(season.winter);
@@ -1231,6 +1319,7 @@ function renderLossChart() {
   }
   const has = kwh.some(v => v != null);
   $('loss-chart').parentElement.classList.toggle('hidden', !has); $('loss-empty').classList.toggle('hidden', has);
+  $('loss-empty').textContent = dashPlace === 'home' ? 'Noch keine Ladungen mit Akku-Start und -Ende erfasst.' : 'Noch keine Ladungen mit kWh und Akku-Start/-Ende bei „' + PLACES[dashPlace] + '“.';
   $('loss-note').textContent = n ? 'Basis: ' + n + ' Ladungen · Kapazität je Ladung gespeichert · enthält u. a. Batterieheizung und Wandlerverluste' : '';
   if (lossChart) lossChart.destroy();
   if (!has) return;
@@ -1253,11 +1342,12 @@ function renderLossChart() {
 
 function renderDashboard() {
   applyTitle(); renderSetupHint();
-  const readings = getReadings(), last = readings[readings.length - 1];
+  const readings = getReadings(), last = lastHome(readings);                   // Zählerstand und letzte Ladung: immer vom Zähler zuhause
   $('dash-reading').textContent = (last ? last.totalReading : 0).toFixed(1).padStart(8, '0');   // 6 Stellen + Komma + 1 Nachkommastelle
   $('dash-last-cost').textContent = last ? eur(last.cost) : '–';
   $('dash-last-kwh').textContent = last ? fmt(last.consumedSinceLast) + ' kWh' : '–';
   $('dash-last-label').textContent = last ? 'Kosten (' + fmtDate(last.date) + ')' : 'Kosten';
+  segPaint('.dash-place-btn', dashPlace);
   renderLive();                                          // überschreibt die Werte, falls der Live-Modus läuft
   renderChart();
   renderStats();
@@ -1266,6 +1356,7 @@ function renderDashboard() {
   renderKeyWarning();
   renderReportBanner();
 }
+document.querySelectorAll('.dash-place-btn').forEach(b => b.addEventListener('click', () => { dashPlace = b.dataset.place; renderDashboard(); }));
 document.querySelectorAll('.range-btn').forEach(b => b.addEventListener('click', () => { range = b.dataset.range; renderChart(); }));
 
 /* =====================================================================
@@ -1283,8 +1374,8 @@ const toLocalInput = (iso) => {                       // ISO-Datum -> Wert für 
 const fmtDuration = (kwh) => { const m = Math.round(kwh / chargePowerKw() * 60); return pad2(Math.floor(m / 60)) + ':' + pad2(m % 60); };
 const durHm = (ms) => { const m = Math.round(ms / 60000); return pad2(Math.floor(m / 60)) + ':' + pad2(m % 60); };
 const realMsOf = (r) => { const ms = r.chargeStart && r.chargeEnd ? Date.parse(r.chargeEnd) - Date.parse(r.chargeStart) : 0; return ms > 0 ? ms : 0; };   // gemessene Ladedauer
-const chargeDurationOf = (r) => realMsOf(r) ? durHm(realMsOf(r)) : fmtDuration(r.consumedSinceLast);
-const unitPriceOf = (r) => r.consumedSinceLast > 0 ? r.cost / r.consumedSinceLast : getSettings().price;
+const chargeDurationOf = (r) => realMsOf(r) ? durHm(realMsOf(r)) : isHome(r) ? fmtDuration(r.consumedSinceLast) : '–';
+const unitPriceOf = (r) => isHome(r) && r.consumedSinceLast > 0 ? r.cost / r.consumedSinceLast : getSettings().price;
 const cell = (i, f) => $('history-list').querySelector(`li[data-idx="${i}"] [data-f="${f}"]`);
 
 function setEditMode(on) {
@@ -1303,16 +1394,17 @@ function renderHistory() {
   const lbl = 'text-xs text-slate-500 dark:text-slate-400';
 
   $('history-list').innerHTML = readings.map((r, i) => {
-    const d = new Date(r.date);
-    const oldVal = i > 0 ? readings[i - 1].totalReading : null;      // alter Stand = Wert des Vorgängers
-    const isStart = oldVal === null && !r.meterReset;                // reiner Startwert ohne Ladung (erster Eintrag ohne Zähler-Reset)
+    const d = new Date(r.date), place = placeOf(r), home = place === 'home';
+    const pj = prevHomeIdx(readings, i), oldVal = pj >= 0 ? readings[pj].totalReading : null;     // alter Stand = Wert des Vorgängers am Zähler (Bosch/Unterwegs zählen nicht)
+    const isStart = home && oldVal === null && !r.meterReset;        // reiner Startwert ohne Ladung (erster Zuhause-Eintrag ohne Zähler-Reset)
 
     const st = entryStats(readings, i);
     const row = (k, v) => `<div class="flex justify-between items-baseline mt-2"><span class="text-sm text-slate-500 dark:text-slate-400">${k}</span><span class="font-medium text-right">${v}</span></div>`;
     const extra = (r.odometerKm != null ? row('Kilometerstand', (st.km ? '<span class="text-xs font-normal text-slate-500">(+' + fmt(st.km, 0) + ' km)</span> ' : '') + fmt(r.odometerKm, 0) + ' km') : '') +
       (r.socStart != null && r.socEnd != null ? row('Ladestand', (st.loss != null && st.loss >= 0 && st.loss < 60 ? '<span class="text-xs font-normal text-slate-500">(Verlust ≈ ' + fmt(st.loss, 0) + ' %)</span> ' : '') + r.socStart + ' % → ' + r.socEnd + ' %') + row('Batteriekapazität', fmt(capOf(r), 1) + ' kWh') : '') +
-      (st.kwh100 != null ? row('Verbrauch/100 km', (st.method === 'charge' ? '≈ ' : '') + fmt(st.kwh100, 1) + ' kWh · ' + eur(st.cost100))
-        + (st.method === 'charge' ? '<p class="text-xs text-slate-500 mt-1 text-right">grob: ohne Akku-% der letzten Ladung aus den geladenen kWh berechnet</p>' : st.rough ? '<p class="text-xs text-slate-500 mt-1 text-right">kleine Akku-Entnahme – Wert ungenau</p>' : '') : '') +
+      (st.kwh100 != null ? row('Verbrauch/100 km', (st.method === 'charge' ? '≈ ' : '') + fmt(st.kwh100, 1) + ' kWh' + (st.cost100 != null ? ' · ' + eur(st.cost100) : ''))
+        + (st.method === 'charge' ? '<p class="text-xs text-slate-500 mt-1 text-right">grob: ohne Akku-% der letzten Ladung aus den geladenen kWh berechnet</p>' : st.rough ? '<p class="text-xs text-slate-500 mt-1 text-right">kleine Akku-Entnahme – Wert ungenau</p>' : '')
+        + (st.cost100 == null ? '<p class="text-xs text-slate-500 mt-1 text-right">Preis fehlt – €/100 km nicht berechenbar (im Bearbeiten-Modus eintragen)</p>' : '') : '') +
       (st.gap ? row('Verbrauch/100 km', '–') + '<p class="text-xs text-slate-500 mt-1 text-right">Akku-Start liegt über dem Ende der letzten Ladung – dazwischen wurde woanders geladen</p>' : '');
 
     const realMs = realMsOf(r), faint = 'text-xs font-normal text-slate-500';
@@ -1325,21 +1417,35 @@ function renderHistory() {
       </div>`;
 
     if (editMode) {
+      const gh = home ? '' : ' hidden', ga = home ? ' hidden' : '';       // Feldgruppen je nach gewähltem Ladeort ein-/ausblenden
       return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4 ring-2 ring-emerald-500/40">
         <input type="datetime-local" data-f="date" value="${toLocalInput(r.date)}" class="${INPUT_CLS}">
-        <div class="grid grid-cols-3 gap-2 mt-3 text-center">
-          <div><p class="${lbl} mb-1">Alt</p>${oldVal === null ? '<p class="py-2">–</p>'
-            : `<input data-f="old" type="text" inputmode="decimal" value="${oldVal.toFixed(1)}" ${r.meterReset ? 'disabled' : ''} class="${INPUT_CLS} disabled:opacity-40">`}</div>
-          <div><p class="${lbl} mb-1">Neu</p><input data-f="new" type="text" inputmode="decimal" value="${r.totalReading.toFixed(1)}" class="${INPUT_CLS}"></div>
-          <div><p class="${lbl} mb-1">Geladen</p><p data-f="diff" class="py-2 font-semibold text-emerald-700 dark:text-emerald-300">–</p></div>
+        <select data-f="place" aria-label="Ladeort" class="${INPUT_CLS} mt-3">${PLACE_KEYS.map(k => `<option value="${k}" ${k === place ? 'selected' : ''}>${PLACES[k]}</option>`).join('')}</select>
+        <div class="g-home${gh}">
+          <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+            <div><p class="${lbl} mb-1">Alt</p>${oldVal === null ? '<p class="py-2">–</p>'
+              : `<input data-f="old" type="text" inputmode="decimal" value="${oldVal.toFixed(1)}" ${r.meterReset ? 'disabled' : ''} class="${INPUT_CLS} disabled:opacity-40">`}</div>
+            <div><p class="${lbl} mb-1">Neu</p><input data-f="new" type="text" inputmode="decimal" value="${r.totalReading.toFixed(1)}" class="${INPUT_CLS}"></div>
+            <div><p class="${lbl} mb-1">Geladen</p><p data-f="diff" class="py-2 font-semibold text-emerald-700 dark:text-emerald-300">–</p></div>
+          </div>
+          <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+            <span class="text-sm text-slate-500 dark:text-slate-400">Kosten</span>
+            <span data-f="cost" class="text-lg font-semibold">–</span>
+          </div>
+          <div class="flex justify-between items-baseline mt-2">
+            <span class="text-sm text-slate-500 dark:text-slate-400">Ladedauer</span>
+            <span data-f="dur" class="text-lg font-semibold">–</span>
+          </div>
         </div>
-        <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-          <span class="text-sm text-slate-500 dark:text-slate-400">Kosten</span>
-          <span data-f="cost" class="text-lg font-semibold">–</span>
-        </div>
-        <div class="flex justify-between items-baseline mt-2">
-          <span class="text-sm text-slate-500 dark:text-slate-400">Ladedauer</span>
-          <span data-f="dur" class="text-lg font-semibold">–</span>
+        <div class="g-away${ga}">
+          <div class="grid grid-cols-2 gap-2 mt-3 text-center">
+            <div><p class="${lbl} mb-1">Geladen kWh</p><input data-f="kwh" type="text" inputmode="decimal" value="${!home && r.consumedSinceLast > 0 ? String(r.consumedSinceLast).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
+            <div><p class="${lbl} mb-1">Preis €/kWh</p><input data-f="price" type="text" inputmode="decimal" value="${!home && r.pricePerKwh != null ? String(r.pricePerKwh).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
+          </div>
+          <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+            <span class="text-sm text-slate-500 dark:text-slate-400">Kosten</span>
+            <span data-f="acost" class="text-lg font-semibold">–</span>
+          </div>
         </div>
         <div class="grid grid-cols-3 gap-2 mt-3 text-center">
           <div><p class="text-xs text-slate-500 dark:text-slate-400 mb-1">km-Stand</p><input data-f="km" type="text" inputmode="decimal" value="${r.odometerKm ?? ''}" class="${INPUT_CLS}"></div>
@@ -1349,18 +1455,30 @@ function renderHistory() {
         <div class="mt-3 grid grid-cols-3 gap-2 text-center">
           <div><p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Kapazität kWh</p><input data-f="cap" type="text" inputmode="decimal" value="${capOf(r)}" class="${INPUT_CLS}"></div>
         </div>
-        ${true ? `<label class="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" data-f="reset" class="accent-emerald-500 w-4 h-4" ${r.meterReset ? 'checked' : ''}> Zähler wurde zurückgesetzt (Verbrauch = Zählerstand)</label>` : ''}
+        <label class="g-home${gh} mt-3 flex items-center gap-2 text-sm"><input type="checkbox" data-f="reset" class="accent-emerald-500 w-4 h-4" ${r.meterReset ? 'checked' : ''}> Zähler wurde zurückgesetzt (Verbrauch = Zählerstand)</label>
         <button data-f="delbtn" data-del="0" class="mt-3 w-full py-2 rounded-xl border border-red-500 text-red-600 dark:text-red-400 text-sm font-medium">Eintrag löschen</button>
       </li>`;
     }
 
     const date = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
                  ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
-    return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <div class="flex justify-between items-baseline">
+    const head = `<div class="flex justify-between items-baseline">
         <span class="font-semibold">${WEEKDAYS[d.getDay()]}</span>
         <span class="text-sm text-slate-500 dark:text-slate-400">${date}</span>
-      </div>
+      </div>`;
+    if (!home) {                                                       // Bosch / Unterwegs: kein Zähler, nur optionale kWh/Preis
+      const hasKwh = r.consumedSinceLast > 0, hasPrice = r.pricePerKwh != null;
+      return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+      ${head}
+      <div class="mt-2"><span class="text-xs px-2.5 py-1 rounded-lg ${PLACE_BADGE[place]}">${PLACES[place]}</span></div>
+      ${extra}
+      ${row('Geladen <span class="text-xs">(laut Säule)</span>', hasKwh ? fmt(r.consumedSinceLast) + ' kWh' : '–')}
+      ${row('Preis', hasPrice ? fmt(r.pricePerKwh, 3) + ' €/kWh' : '–')}
+      ${row('Kosten', hasKwh && hasPrice ? eur(r.cost) : '–')}
+    </li>`;
+    }
+    return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
+      ${head}
       <div class="grid grid-cols-3 gap-2 mt-3 text-center">
         <div><p class="${lbl}">Alt</p><p class="font-medium">${r.meterReset ? 'Reset' : oldVal === null ? '–' : fmt(oldVal)}</p></div>
         <div><p class="${lbl}">Neu</p><p class="font-medium">${fmt(r.totalReading)}</p></div>
@@ -1378,27 +1496,56 @@ function renderHistory() {
   renderDataCheck();
 }
 
+/** Ladeort der Karte i im Bearbeiten-Modus (so, wie er gerade im Auswahlfeld steht). */
+const domPlace = (i) => cell(i, 'place')?.value || 'home';
+function togglePlaceGroups(li, place) {
+  li.querySelectorAll('.g-home').forEach(el => el.classList.toggle('hidden', place !== 'home'));
+  li.querySelectorAll('.g-away').forEach(el => el.classList.toggle('hidden', place === 'home'));
+}
+/** "Alt" eines Zuhause-Eintrags und "Neu" des vorherigen Zuhause-Eintrags sind derselbe Wert (Bosch/Unterwegs dazwischen zählen nicht). */
+function syncOlds() {
+  let prevNew = null;
+  getReadings().forEach((_, i) => {
+    if (domPlace(i) !== 'home') return;
+    if (prevNew != null && cell(i, 'old')) cell(i, 'old').value = prevNew;
+    prevNew = cell(i, 'new').value;
+  });
+}
+
 /** Berechnet im Bearbeitungsmodus live die geladenen kWh aus den Eingabefeldern. */
 function updateDiffs() {
   const stored = getReadings();
+  let prevNew = null;                                    // letzter Zuhause-Stand in der Reihenfolge der Einträge
   for (let i = 0; i < stored.length; i++) {
-    const neu = parseNum(cell(i, 'new').value), old = i > 0 ? parseNum(cell(i - 1, 'new').value) : NaN;
-    const reset = cell(i, 'reset')?.checked === true;
-    const ok = (i > 0 || reset) && isFinite(neu) && (reset || isFinite(old)), kwh = ok ? (reset ? neu : Math.max(0, neu - old)) : 0;
-    cell(i, 'diff').textContent = ok ? fmt(kwh) + ' kWh' : '–';
-    cell(i, 'cost').textContent = ok ? eur(kwh * unitPriceOf(stored[i])) : '–';
-    cell(i, 'dur').textContent = ok ? fmtDuration(kwh) + ' h' : '–';
+    if (domPlace(i) === 'home') {
+      const neu = parseNum(cell(i, 'new').value), reset = cell(i, 'reset')?.checked === true;
+      const ok = isFinite(neu) && (reset || prevNew != null), kwh = ok ? (reset ? neu : Math.max(0, neu - prevNew)) : 0;
+      cell(i, 'diff').textContent = ok ? fmt(kwh) + ' kWh' : '–';
+      cell(i, 'cost').textContent = ok ? eur(kwh * unitPriceOf(stored[i])) : '–';
+      cell(i, 'dur').textContent = ok ? fmtDuration(kwh) + ' h' : '–';
+      if (isFinite(neu)) prevNew = neu;
+    } else {
+      const kwh = optNum(cell(i, 'kwh').value), price = optNum(cell(i, 'price').value);
+      cell(i, 'acost').textContent = kwh != null && price != null && isFinite(kwh) && isFinite(price) ? eur(kwh * price) : '–';
+    }
   }
 }
 
-// "Alt" eines Eintrags und "Neu" des Vorgängers sind derselbe Wert -> immer gemeinsam aktualisieren
 $('history-list').addEventListener('input', (e) => {
   if (!editMode || !e.target.dataset.f) return;
-  const i = +e.target.closest('li').dataset.idx, f = e.target.dataset.f;
-  if (f === 'new' && cell(i + 1, 'old')) cell(i + 1, 'old').value = e.target.value;
-  if (f === 'old' && cell(i - 1, 'new')) cell(i - 1, 'new').value = e.target.value;
+  const li = e.target.closest('li'), i = +li.dataset.idx, f = e.target.dataset.f;
+  if (f === 'new') syncOlds();
+  if (f === 'old') {                                     // "Alt" ändern = "Neu" des vorherigen Zuhause-Eintrags ändern
+    let j = i - 1; while (j >= 0 && domPlace(j) !== 'home') j--;
+    if (j >= 0) cell(j, 'new').value = e.target.value;
+    syncOlds();
+  }
   if (f === 'reset' && cell(i, 'old')) cell(i, 'old').disabled = e.target.checked;
   updateDiffs();
+});
+$('history-list').addEventListener('change', (e) => {   // Ladeort gewechselt: passende Felder zeigen
+  if (!editMode || e.target.dataset.f !== 'place') return;
+  togglePlaceGroups(e.target.closest('li'), e.target.value); syncOlds(); updateDiffs();
 });
 
 $('history-list').addEventListener('click', (e) => {      // "Eintrag löschen" markiert nur; gelöscht wird erst beim Speichern
@@ -1413,10 +1560,13 @@ $('btn-edit-cancel').addEventListener('click', () => setEditMode(false));
 $('btn-edit-save').addEventListener('click', () => {
   const stored = getReadings(), currentPrice = getSettings().price;
   const all = stored.map((r, i) => ({
-    r, date: new Date(cell(i, 'date').value), neu: Math.round(parseNum(cell(i, 'new').value) * 10) / 10,
-    cap: parseNum(cell(i, 'cap').value), reset: cell(i, 'reset')?.checked === true, km: optNum(cell(i, 'km').value), s0: optNum(cell(i, 's0').value), s1: optNum(cell(i, 's1').value), del: cell(i, 'delbtn').dataset.del === '1'
+    r, date: new Date(cell(i, 'date').value), place: domPlace(i), neu: Math.round(parseNum(cell(i, 'new').value) * 10) / 10,
+    cap: parseNum(cell(i, 'cap').value), reset: cell(i, 'reset')?.checked === true, km: optNum(cell(i, 'km').value), s0: optNum(cell(i, 's0').value), s1: optNum(cell(i, 's1').value),
+    kwh: optNum(cell(i, 'kwh').value), price: optNum(cell(i, 'price').value), del: cell(i, 'delbtn').dataset.del === '1'
   }));
-  if (all.some(x => isNaN(x.date) || !isFinite(x.neu) || x.neu < 0)) { alert('Bitte gültige Datums- und Zählerstandswerte eingeben.'); return; }
+  const live = all.filter(x => !x.del);
+  if (live.some(x => isNaN(x.date) || (x.place === 'home' && (!isFinite(x.neu) || x.neu < 0)))) { alert('Bitte gültige Datums- und Zählerstandswerte eingeben.'); return; }
+  if (live.some(x => x.place !== 'home' && ([x.kwh, x.price].some(Number.isNaN) || (x.kwh != null && x.kwh < 0) || (x.price != null && x.price < 0)))) { alert('Bitte kWh und Preis prüfen (Zahl, nicht negativ).'); return; }
   if (all.some(x => [x.km, x.s0, x.s1].some(Number.isNaN) || (x.km != null && x.km < 0) || [x.s0, x.s1].some(v => v != null && (v < 0 || v > 100)) || (x.s0 != null && x.s1 != null && x.s1 <= x.s0))) {
     alert('Bitte km-Stand und Akku-Prozente prüfen (0–100 %, Ende größer als Start).'); return;
   }
@@ -1426,18 +1576,30 @@ $('btn-edit-save').addEventListener('click', () => {
   const items = all.filter(x => !x.del);
 
   items.sort((a, b) => a.date - b.date);                 // chronologisch, falls Datum geändert wurde
-  if (items.some((x, i) => i > 0 && x.neu < items[i - 1].neu && !x.reset) &&
-      !confirm('Mindestens ein Zählerstand ist kleiner als der vorherige. Trotzdem speichern?')) return;
+  let chk = null;                                        // Zählerstand muss nur zwischen Zuhause-Einträgen steigen
+  const drop = items.some(x => { if (x.place !== 'home') return false; const bad = chk != null && x.neu < chk && !x.reset; chk = x.neu; return bad; });
+  if (drop && !confirm('Mindestens ein Zählerstand ist kleiner als der vorherige. Trotzdem speichern?')) return;
 
-  const result = items.map((x, i) => {
-    // Preis pro kWh des Eintrags beibehalten (aus den gespeicherten Werten), sonst aktueller Preis
-    const unitPrice = x.r.consumedSinceLast > 0 ? x.r.cost / x.r.consumedSinceLast : currentPrice;
-    const consumed = x.reset ? x.neu : (i > 0 ? Math.max(0, Math.round((x.neu - items[i - 1].neu) * 10) / 10) : 0);   // Reset: Ladung ab 0 (auch beim ersten Eintrag)
-    const out = { ...x.r, id: x.r.id, date: x.date.toISOString(), totalReading: x.neu, consumedSinceLast: consumed, cost: consumed * unitPrice };
+  let prevHomeNew = null;                                // Zählerkette: nur Zuhause-Einträge
+  const result = items.map(x => {
+    const wasHome = isHome(x.r), common = { id: x.r.id, date: x.date.toISOString() };
+    let out;
+    if (x.place === 'home') {
+      // Preis pro kWh des Eintrags beibehalten (aus den gespeicherten Werten), sonst aktueller Preis
+      const unitPrice = wasHome && x.r.consumedSinceLast > 0 ? x.r.cost / x.r.consumedSinceLast : currentPrice;
+      const consumed = x.reset ? x.neu : (prevHomeNew != null ? Math.max(0, Math.round((x.neu - prevHomeNew) * 10) / 10) : 0);
+      out = { ...x.r, ...common, totalReading: x.neu, consumedSinceLast: consumed, cost: consumed * unitPrice };
+      delete out.place; delete out.pricePerKwh;
+      if (x.reset) out.meterReset = true; else delete out.meterReset;
+      prevHomeNew = x.neu;
+    } else {
+      out = { ...x.r, ...common, place: x.place, totalReading: prevHomeNew ?? 0, consumedSinceLast: x.kwh ?? 0, cost: x.kwh != null && x.price != null ? x.kwh * x.price : 0 };
+      if (x.price != null) out.pricePerKwh = x.price; else delete out.pricePerKwh;
+      delete out.meterReset; delete out.chargeStart; delete out.chargeEnd; delete out.avgPowerKw;     // Zähler-/Live-Daten gibt es nur zuhause
+    }
     if (x.km != null) out.odometerKm = x.km; else delete out.odometerKm;       // geleerte Felder wirklich entfernen
     if (x.s0 != null) out.socStart = x.s0; else delete out.socStart;
     if (x.s1 != null) out.socEnd = x.s1; else delete out.socEnd;
-    if (x.reset) out.meterReset = true; else delete out.meterReset;
     out.capacityKwh = x.cap;
     return out;
   });
@@ -1465,7 +1627,7 @@ if (document.fonts) document.fonts.ready.then(fitSeg);
    Export / Import der Zählerstände
    Dateiformat (JSON):
    { "app": "enyaq-ladekosten", "version": 1, "exportedAt": "<ISO-Datum>", "chargePowerKw": 7,
-     "readings": [ { id, date, totalReading, consumedSinceLast, cost, chargeDuration ("hh:mm") }, … ] }
+     "readings": [ { id, date, totalReading, consumedSinceLast, cost, chargeDuration ("hh:mm"), place ("bosch" | "away"; fehlt = Zuhause), pricePerKwh }, … ] }
    Die Felder "app" und "version" dienen dem Wiedererkennen beim Import. Einstellungen werden nicht exportiert.
    "chargeDuration" ist ein abgeleiteter Wert (kWh / Ladeleistung): Er wird exportiert und beim Import geprüft,
    aber nicht gespeichert, sondern bei der Anzeige immer neu berechnet.
@@ -1477,7 +1639,7 @@ $('btn-export').addEventListener('click', () => {
   if (!readings.length) { flash($('io-msg'), 'Keine Daten zum Exportieren vorhanden.', false); return; }
   const payload = {
     app: EXPORT_APP_ID, version: 1, exportedAt: new Date().toISOString(), chargePowerKw: chargePowerKw(),
-    readings: readings.map(r => ({ ...r, chargeDuration: chargeDurationOf(r) }))      // Ladedauer als hh:mm
+    readings: readings.map(r => ({ ...r, chargeDuration: isHome(r) ? chargeDurationOf(r) : undefined }))      // Ladedauer als hh:mm (nur Zuhause)
   };
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
@@ -1503,7 +1665,11 @@ function parseImport(text) {
     if (!Number.isFinite(id) || seen.has(id)) id = Date.now() + i;      // IDs eindeutig halten
     seen.add(id);
     const out = { id, date: date.toISOString(), totalReading: r.totalReading, consumedSinceLast: r.consumedSinceLast, cost: r.cost };
-    for (const k of ['odometerKm', 'socStart', 'socEnd', 'capacityKwh', 'avgPowerKw']) {            // optionale Felder prüfen und übernehmen
+    if (r.place !== undefined && r.place !== null) {                                                // Ladeort: fehlt = Zuhause
+      if (!PLACES[r.place]) throw new Error('Ladeort in Eintrag ' + (i + 1) + ' ist ungültig.');
+      if (r.place !== 'home') out.place = r.place;
+    }
+    for (const k of ['odometerKm', 'socStart', 'socEnd', 'capacityKwh', 'avgPowerKw', 'pricePerKwh']) {            // optionale Felder prüfen und übernehmen
       if (r[k] === undefined || r[k] === null) continue;
       if (typeof r[k] !== 'number' || !isFinite(r[k]) || r[k] < 0 || (k === 'capacityKwh' ? (r[k] < 10 || r[k] > 200) : (k !== 'odometerKm' && r[k] > 100))) throw new Error('Feld ' + k + ' in Eintrag ' + (i + 1) + ' ist ungültig.');
       out[k] = r[k];
@@ -1614,35 +1780,39 @@ const isoWeek = (d) => {                                  // ISO-Kalenderwoche
   return Math.ceil(((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
 };
 
-function monthReport(y, m) {
+function monthReport(y, m, place = 'home') {
   const rs = getReadings(), s = new Date(y, m, 1), e = new Date(y, m + 1, 1), wk = new Map();
   for (let d = new Date(s); d < e; d.setDate(d.getDate() + 1)) { const k = isoWeek(d); if (!wk.has(k)) wk.set(k, 0); }
-  const o = { y, m, charges: [], kwh: 0, cost: 0, km: 0, kwhKm: 0, costKm: 0, nKm: 0, chg: 0, stored: 0, nSoc: 0, lossCost: 0 }, idx = [];
+  const o = { y, m, place, charges: [], kwh: 0, cost: 0, km: 0, kwhKm: 0, costKm: 0, nKm: 0, chg: 0, stored: 0, nSoc: 0, lossCost: 0, kwhP: 0, costP: 0 }, idx = [];
   rs.forEach((r, i) => {
     const d = new Date(r.date);
-    if ((i === 0 && !r.meterReset) || !(d >= s && d < e)) return;            // der erste Eintrag ist nur der Startwert (außer der Zähler begann bei 0)
-    const st = entryStats(rs, i), c = r.consumedSinceLast;
+    if (placeOf(r) !== place || isStartRow(rs, i) || !(d >= s && d < e)) return;   // der erste Zuhause-Eintrag (ohne Reset) ist nur der Startwert
+    const st = entryStats(rs, i), c = r.consumedSinceLast, u = unitOf(r);
     o.kwh += c; o.cost += r.cost;
     wk.set(isoWeek(d), (wk.get(isoWeek(d)) || 0) + c);
-    if (c > 0) o.charges.push({ r, d, st });
+    if (isCharge(rs, i)) o.charges.push({ r, d, st });
+    if (u != null && c > 0) { o.kwhP += c; o.costP += c * u; }                      // Ø Preis nur aus Ladungen mit kWh und Preis
     idx.push(i);
-    if (st.stored !== undefined) { o.chg += c; o.stored += st.stored; o.nSoc++; o.lossCost += (c - st.stored) * (r.cost / c); }
+    if (st.stored !== undefined) { o.chg += c; o.stored += st.stored; o.nSoc++; o.lossCost += (c - st.stored) * (u ?? 0); }
   });
   o.weeks = [...wk].map(([kw, kwh]) => ({ kw, kwh }));
   const t = consumptionTotals(rs, idx);                   // Verbrauch aus der Akku-Entnahme (falls Akku-% erfasst), sonst grob
   o.km = t.km; o.kwhKm = t.kwh; o.costKm = t.cost; o.nKm = t.n; o.approx = t.approx;
   o.kwh100 = t.km ? t.kwh100 : null;
-  o.cost100 = t.km ? t.cost100 : null;
+  o.cost100 = t.cost100;
   o.loss = o.chg > 0 ? Math.max(0, (1 - o.stored / o.chg) * 100) : null;
   o.lossCost = Math.max(0, o.lossCost);
-  o.price = o.kwh > 0 ? o.cost / o.kwh : null;
+  o.price = o.kwhP > 0 ? o.costP / o.kwhP : null;
   return o;
 }
+/** Hat der Monat bei irgendeinem Ladeort Ladungen? (für Hinweiskarte und Standardmonat) */
+const monthHasCharges = (y, m) => PLACE_KEYS.some(k => monthReport(y, m, k).charges.length > 0);
+
 const prevMonthOf = (d = new Date()) => new Date(d.getFullYear(), d.getMonth() - 1, 1);
 function defaultReportMonth() {                           // Standard: laufender Monat, wenn er Ladungen hat; sonst der Vormonat
   const n = new Date(), p = prevMonthOf(n), cur = { y: n.getFullYear(), m: n.getMonth() };
-  if (monthReport(cur.y, cur.m).charges.length) return cur;
-  return monthReport(p.getFullYear(), p.getMonth()).charges.length ? { y: p.getFullYear(), m: p.getMonth() } : cur;
+  if (monthHasCharges(cur.y, cur.m)) return cur;
+  return monthHasCharges(p.getFullYear(), p.getMonth()) ? { y: p.getFullYear(), m: p.getMonth() } : cur;
 }
 function markReportSeen(y, m) {
   const p = prevMonthOf();
@@ -1652,7 +1822,7 @@ function markReportSeen(y, m) {
 /** Hinweiskarte auf dem Dashboard, solange der Bericht des Vormonats noch nicht angesehen wurde. */
 function renderReportBanner() {
   const el = $('report-banner'), p = prevMonthOf(), key = ymKey(p.getFullYear(), p.getMonth());
-  const show = load(KEY_REPORT_SEEN, '') !== key && monthReport(p.getFullYear(), p.getMonth()).charges.length > 0;
+  const show = load(KEY_REPORT_SEEN, '') !== key && monthHasCharges(p.getFullYear(), p.getMonth());
   el.classList.toggle('hidden', !show);
   if (show) $('report-banner-text').textContent = 'Dein Bericht für ' + MONTHS_LONG[p.getMonth()] + ' ist fertig';
 }
@@ -1664,16 +1834,19 @@ const GOOD = 'text-emerald-600 dark:text-emerald-400', BAD = 'text-amber-600 dar
 function renderReport() {
   if (!reportYM) reportYM = defaultReportMonth();
   const { y, m } = reportYM, rs = getReadings(), n = new Date(), cur = y === n.getFullYear() && m === n.getMonth();
-  const r = monthReport(y, m), py = m === 0 ? y - 1 : y, pm = m === 0 ? 11 : m - 1, p = monthReport(py, pm);
+  const r = monthReport(y, m, repPlace), py = m === 0 ? y - 1 : y, pm = m === 0 ? 11 : m - 1, p = monthReport(py, pm, repPlace);
   const first = rs.length ? new Date(rs[0].date) : n;
   $('rep-prev').disabled = !(y > first.getFullYear() || (y === first.getFullYear() && m > first.getMonth()));
   $('rep-next').disabled = cur;
   $('rep-title').textContent = MONTHS_LONG[m] + ' ' + y;
-  $('rep-sub').textContent = cur ? 'Zwischenstand bis heute' : 'Monatsbericht';
+  $('rep-sub').textContent = (cur ? 'Zwischenstand bis heute' : 'Monatsbericht') + ' · ' + PLACES[repPlace];
+  segPaint('.rep-place-btn', repPlace);
   $('rep-print-app').textContent = getSettings().title || DEFAULT_TITLE;
   markReportSeen(y, m);
 
   const empty = !r.charges.length;
+  $('rep-empty-t').textContent = 'Keine Ladungen' + (repPlace === 'home' ? '' : ' bei „' + PLACES[repPlace] + '“') + ' in diesem Monat';
+  $('rep-empty-s').textContent = repPlace === 'home' ? 'Sobald du einen Zählerstand erfasst, erscheint hier der Bericht.' : 'Sobald du eine Ladung bei „' + PLACES[repPlace] + '“ erfasst, erscheint hier der Bericht.';
   $('rep-empty').classList.toggle('hidden', !empty); $('rep-body').classList.toggle('hidden', empty);
   if (empty) return;
 
@@ -1689,8 +1862,9 @@ function renderReport() {
   } else { dl.textContent = 'Kein Vormonat zum Vergleich'; dl.className = 'text-sm mt-2 text-slate-500 dark:text-slate-400'; }
 
   $('rep-kwh').textContent = fmt(r.kwh, 1);
-  $('rep-n').textContent = r.charges.length; $('rep-n-sub').textContent = 'Ø ' + fmt(r.kwh / r.charges.length, 1) + ' kWh';
-  $('rep-price').textContent = fmt(r.price, 3);
+  const nk = r.charges.filter(c => c.r.consumedSinceLast > 0).length;               // Bosch/Unterwegs: kWh sind optional
+  $('rep-n').textContent = r.charges.length; $('rep-n-sub').textContent = nk ? 'Ø ' + fmt(r.kwh / nk, 1) + ' kWh' : 'ohne kWh-Angabe';
+  $('rep-price').textContent = r.price != null ? fmt(r.price, 3) : '–';
 
   /* Wochenverlauf */
   const max = Math.max(1, ...r.weeks.map(w => w.kwh)), top = Math.max(...r.weeks.map(w => w.kwh));
@@ -1705,7 +1879,7 @@ function renderReport() {
 
   /* Vergleich + Jahr */
   let ytdCost = 0, ytdKwh = 0, ytdMonths = 0;
-  for (let mm = 0; mm <= m; mm++) { const q = monthReport(y, mm); if (q.charges.length) { ytdCost += q.cost; ytdKwh += q.kwh; ytdMonths++; } }
+  for (let mm = 0; mm <= m; mm++) { const q = monthReport(y, mm, repPlace); if (q.charges.length) { ytdCost += q.cost; ytdKwh += q.kwh; ytdMonths++; } }
   const rows = [];
   if (p.charges.length && cur) {
     rows.push(repRow('Kosten ' + MONTHS_LONG[pm] + ' (gesamt)', eur(p.cost)), repRow('kWh ' + MONTHS_LONG[pm] + ' (gesamt)', fmt(p.kwh, 1) + ' kWh'), repRow('Hochrechnung dieser Monat', 'ca. ' + eur(proj)));
@@ -1718,13 +1892,13 @@ function renderReport() {
   $('rep-compare').innerHTML = rows.join('');
 
   /* Highlights */
-  const big = r.charges.reduce((a, b) => b.r.consumedSinceLast > a.r.consumedSinceLast ? b : a);
+  const big = r.charges.reduce((a, b) => b.r.consumedSinceLast > a.r.consumedSinceLast ? b : a), homeRep = repPlace === 'home';
   const wd = [0, 0, 0, 0, 0, 0, 0]; r.charges.forEach(c => wd[c.d.getDay()]++);
   const wdTop = wd.indexOf(Math.max(...wd));
   const avgMin = r.charges.reduce((s, c) => s + (realMsOf(c.r) ? realMsOf(c.r) / 60000 : c.r.consumedSinceLast / chargePowerKw() * 60), 0) / r.charges.length;
-  $('rep-high').innerHTML = repRow('Größte Ladung', fmt(big.r.consumedSinceLast, 1) + ' kWh · ' + eur(big.r.cost) + ' (KW ' + isoWeek(big.d) + ')')
+  $('rep-high').innerHTML = (big.r.consumedSinceLast > 0 ? repRow('Größte Ladung', fmt(big.r.consumedSinceLast, 1) + ' kWh' + (big.r.cost > 0 ? ' · ' + eur(big.r.cost) : '') + ' (KW ' + isoWeek(big.d) + ')') : '')
     + repRow('Häufigster Ladetag', WEEKDAYS[wdTop] + ' (' + wd[wdTop] + ' von ' + r.charges.length + ')')
-    + repRow('Ø Ladedauer', durHm(avgMin * 60000) + ' h')
+    + (homeRep ? repRow('Ø Ladedauer', durHm(avgMin * 60000) + ' h') : '')
     + repRow('Jahr bisher', eur(ytdCost) + ' · ' + fmt(ytdKwh, 0) + ' kWh');
 
   /* Hinweise zur Datenbasis */
@@ -1740,9 +1914,10 @@ function renderReport() {
   /* Ladeliste (nur im PDF/Druck sichtbar) */
   const th = 'text-left font-medium py-1 border-b border-slate-300', td = 'py-1 border-b border-slate-200';
   $('rep-list').innerHTML = `<p class="text-sm mb-2">Alle Ladungen im ${MONTHS_LONG[m]} ${y}</p><table class="w-full text-xs"><thead><tr><th class="${th}">Datum</th><th class="${th} text-right">kWh</th><th class="${th} text-right">Kosten</th><th class="${th} text-right">Dauer</th><th class="${th} text-right">km</th></tr></thead><tbody>`
-    + r.charges.map(c => `<tr><td class="${td}">${c.d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}, ${c.d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</td><td class="${td} text-right">${fmt(c.r.consumedSinceLast, 1)}</td><td class="${td} text-right">${eur(c.r.cost)}</td><td class="${td} text-right">${chargeDurationOf(c.r)}</td><td class="${td} text-right">${c.st.km ? fmt(c.st.km, 0) : '–'}</td></tr>`).join('')
+    + r.charges.map(c => `<tr><td class="${td}">${c.d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}, ${c.d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</td><td class="${td} text-right">${c.r.consumedSinceLast > 0 ? fmt(c.r.consumedSinceLast, 1) : '–'}</td><td class="${td} text-right">${homeRep || (c.r.consumedSinceLast > 0 && c.r.pricePerKwh != null) ? eur(c.r.cost) : '–'}</td><td class="${td} text-right">${isHome(c.r) ? chargeDurationOf(c.r) : '–'}</td><td class="${td} text-right">${c.st.km ? fmt(c.st.km, 0) : '–'}</td></tr>`).join('')
     + `<tr class="font-semibold"><td class="py-1">Summe</td><td class="py-1 text-right">${fmt(r.kwh, 1)}</td><td class="py-1 text-right">${eur(r.cost)}</td><td></td><td class="py-1 text-right">${r.km ? fmt(r.km, 0) : '–'}</td></tr></tbody></table>`;
 }
+document.querySelectorAll('.rep-place-btn').forEach(b => b.addEventListener('click', () => { repPlace = b.dataset.place; renderReport(); }));
 $('rep-prev').addEventListener('click', () => { const d = new Date(reportYM.y, reportYM.m - 1, 1); reportYM = { y: d.getFullYear(), m: d.getMonth() }; renderReport(); });
 $('rep-next').addEventListener('click', () => { const d = new Date(reportYM.y, reportYM.m + 1, 1); reportYM = { y: d.getFullYear(), m: d.getMonth() }; renderReport(); });
 
@@ -1807,7 +1982,7 @@ const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });   // Offline-Queue
 let user = null, unsub = null;
 const col = () => collection(db, 'enyaqStrom', user.uid, 'readings');
-const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost, r.odometerKm, r.socStart, r.socEnd, r.capacityKwh, r.chargeStart, r.chargeEnd, r.avgPowerKw, r.meterReset].join('|');
+const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost, r.odometerKm, r.socStart, r.socEnd, r.capacityKwh, r.chargeStart, r.chargeEnd, r.avgPowerKw, r.meterReset, r.place, r.pricePerKwh].join('|');
 
 window.cloud = {
   isSignedIn: () => !!user,
