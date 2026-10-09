@@ -518,10 +518,10 @@ function dataChecks(rs) {
   let maxKm = null;
   rs.forEach((r, i) => {
     const s = entryStats(rs, i);
-    if (i > 0) {
+    if (i > 0 || r.meterReset) {                       // erster Eintrag zählt nur als Ladung, wenn der Zähler bei 0 begann
       if (r.consumedSinceLast === 0) add(i, 'zero', 'Keine kWh seit dem letzten Eintrag – doppelt gespeichert oder der Zähler nicht abgelesen?');
       if (r.consumedSinceLast > capOf(r) * 1.3) add(i, 'big', fmt(r.consumedSinceLast) + ' kWh sind mehr als die Batteriekapazität – Zähler zurückgesetzt, aber nicht markiert?');
-      const gap = Date.parse(r.date) - Date.parse(rs[i - 1].date);
+      const gap = i > 0 ? Date.parse(r.date) - Date.parse(rs[i - 1].date) : -1;
       if (gap >= 0 && gap < 600000) add(i, 'dup', 'Weniger als 10 Minuten nach dem vorherigen Eintrag – doppelt erfasst?');
     }
     if (s.gap) add(i, 'gap', 'Akku-Start (' + r.socStart + ' %) liegt über dem Ende der letzten Ladung (' + rs[i - 1].socEnd + ' %) – dazwischen wurde vermutlich woanders geladen. Der Verbrauch dieser Strecke ist nicht berechenbar.');
@@ -1158,7 +1158,7 @@ let statRange = 'week';
 
 function renderStats() {
   const readings = getReadings();
-  const charges = readings.filter((r, i) => i > 0 && r.consumedSinceLast > 0);
+  const charges = readings.filter((r, i) => (i > 0 || r.meterReset) && r.consumedSinceLast > 0);
   document.querySelectorAll('.stat-btn').forEach(b => {
     const on = b.dataset.stat === statRange;
     b.classList.toggle('bg-white', on); b.classList.toggle('dark:bg-slate-700', on); b.classList.toggle('shadow-sm', on);
@@ -1321,7 +1321,7 @@ function renderHistory() {
         row('Ø Leistung am Zähler', (r.avgPowerKw != null ? '<span class="' + faint + '">(Auto: ' + fmt(r.avgPowerKw, 1) + ' kW)</span> ' : '') + fmt(r.consumedSinceLast / (realMs / 3600000), 1) + ' kW')
       : `<div class="flex justify-between items-baseline mt-2">
         <span class="text-sm text-slate-500 dark:text-slate-400">Ladedauer <span class="text-xs">(bei ${chargePowerKw()} kW)</span></span>
-        <span class="text-lg font-semibold">${oldVal === null ? '–' : fmtDuration(r.consumedSinceLast) + ' h'}</span>
+        <span class="text-lg font-semibold">${oldVal === null && !r.meterReset ? '–' : fmtDuration(r.consumedSinceLast) + ' h'}</span>
       </div>`;
 
     if (editMode) {
@@ -1349,7 +1349,7 @@ function renderHistory() {
         <div class="mt-3 grid grid-cols-3 gap-2 text-center">
           <div><p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Kapazität kWh</p><input data-f="cap" type="text" inputmode="decimal" value="${capOf(r)}" class="${INPUT_CLS}"></div>
         </div>
-        ${i > 0 ? `<label class="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" data-f="reset" class="accent-emerald-500 w-4 h-4" ${r.meterReset ? 'checked' : ''}> Zähler wurde zurückgesetzt (Verbrauch = Zählerstand)</label>` : ''}
+        ${true ? `<label class="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" data-f="reset" class="accent-emerald-500 w-4 h-4" ${r.meterReset ? 'checked' : ''}> Zähler wurde zurückgesetzt (Verbrauch = Zählerstand)</label>` : ''}
         <button data-f="delbtn" data-del="0" class="mt-3 w-full py-2 rounded-xl border border-red-500 text-red-600 dark:text-red-400 text-sm font-medium">Eintrag löschen</button>
       </li>`;
     }
@@ -1383,8 +1383,8 @@ function updateDiffs() {
   const stored = getReadings();
   for (let i = 0; i < stored.length; i++) {
     const neu = parseNum(cell(i, 'new').value), old = i > 0 ? parseNum(cell(i - 1, 'new').value) : NaN;
-    const reset = i > 0 && cell(i, 'reset')?.checked === true;
-    const ok = i > 0 && isFinite(neu) && (reset || isFinite(old)), kwh = ok ? (reset ? neu : Math.max(0, neu - old)) : 0;
+    const reset = cell(i, 'reset')?.checked === true;
+    const ok = (i > 0 || reset) && isFinite(neu) && (reset || isFinite(old)), kwh = ok ? (reset ? neu : Math.max(0, neu - old)) : 0;
     cell(i, 'diff').textContent = ok ? fmt(kwh) + ' kWh' : '–';
     cell(i, 'cost').textContent = ok ? eur(kwh * unitPriceOf(stored[i])) : '–';
     cell(i, 'dur').textContent = ok ? fmtDuration(kwh) + ' h' : '–';
@@ -1414,7 +1414,7 @@ $('btn-edit-save').addEventListener('click', () => {
   const stored = getReadings(), currentPrice = getSettings().price;
   const all = stored.map((r, i) => ({
     r, date: new Date(cell(i, 'date').value), neu: Math.round(parseNum(cell(i, 'new').value) * 10) / 10,
-    cap: parseNum(cell(i, 'cap').value), reset: i > 0 && cell(i, 'reset')?.checked === true, km: optNum(cell(i, 'km').value), s0: optNum(cell(i, 's0').value), s1: optNum(cell(i, 's1').value), del: cell(i, 'delbtn').dataset.del === '1'
+    cap: parseNum(cell(i, 'cap').value), reset: cell(i, 'reset')?.checked === true, km: optNum(cell(i, 'km').value), s0: optNum(cell(i, 's0').value), s1: optNum(cell(i, 's1').value), del: cell(i, 'delbtn').dataset.del === '1'
   }));
   if (all.some(x => isNaN(x.date) || !isFinite(x.neu) || x.neu < 0)) { alert('Bitte gültige Datums- und Zählerstandswerte eingeben.'); return; }
   if (all.some(x => [x.km, x.s0, x.s1].some(Number.isNaN) || (x.km != null && x.km < 0) || [x.s0, x.s1].some(v => v != null && (v < 0 || v > 100)) || (x.s0 != null && x.s1 != null && x.s1 <= x.s0))) {
@@ -1432,7 +1432,7 @@ $('btn-edit-save').addEventListener('click', () => {
   const result = items.map((x, i) => {
     // Preis pro kWh des Eintrags beibehalten (aus den gespeicherten Werten), sonst aktueller Preis
     const unitPrice = x.r.consumedSinceLast > 0 ? x.r.cost / x.r.consumedSinceLast : currentPrice;
-    const consumed = i > 0 ? (x.reset ? x.neu : Math.max(0, Math.round((x.neu - items[i - 1].neu) * 10) / 10)) : 0;
+    const consumed = x.reset ? x.neu : (i > 0 ? Math.max(0, Math.round((x.neu - items[i - 1].neu) * 10) / 10) : 0);   // Reset: Ladung ab 0 (auch beim ersten Eintrag)
     const out = { ...x.r, id: x.r.id, date: x.date.toISOString(), totalReading: x.neu, consumedSinceLast: consumed, cost: consumed * unitPrice };
     if (x.km != null) out.odometerKm = x.km; else delete out.odometerKm;       // geleerte Felder wirklich entfernen
     if (x.s0 != null) out.socStart = x.s0; else delete out.socStart;
@@ -1620,7 +1620,7 @@ function monthReport(y, m) {
   const o = { y, m, charges: [], kwh: 0, cost: 0, km: 0, kwhKm: 0, costKm: 0, nKm: 0, chg: 0, stored: 0, nSoc: 0, lossCost: 0 }, idx = [];
   rs.forEach((r, i) => {
     const d = new Date(r.date);
-    if (i === 0 || !(d >= s && d < e)) return;            // der erste Eintrag ist nur der Startwert
+    if ((i === 0 && !r.meterReset) || !(d >= s && d < e)) return;            // der erste Eintrag ist nur der Startwert (außer der Zähler begann bei 0)
     const st = entryStats(rs, i), c = r.consumedSinceLast;
     o.kwh += c; o.cost += r.cost;
     wk.set(isoWeek(d), (wk.get(isoWeek(d)) || 0) + c);
