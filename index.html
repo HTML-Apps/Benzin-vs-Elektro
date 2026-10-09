@@ -646,7 +646,6 @@ function entryStats(rs, i) {
     if (s.usedWall != null) {
       s.kwh100 = s.usedWall / s.km * 100;
       s.cost100 = s.usedWall * (r.cost / r.consumedSinceLast) / s.km * 100;
-      if (s.usedBat != null) s.kwh100Car = s.usedBat / s.km * 100;       // Verbrauch am Fahrzeug (ohne Ladeverluste)
     }
   }
   if (r.socStart != null && r.socEnd != null && r.socEnd > r.socStart && r.consumedSinceLast > 0) {
@@ -1306,12 +1305,13 @@ function renderHistory() {
   $('history-list').innerHTML = readings.map((r, i) => {
     const d = new Date(r.date);
     const oldVal = i > 0 ? readings[i - 1].totalReading : null;      // alter Stand = Wert des Vorgängers
+    const isStart = oldVal === null && !r.meterReset;                // reiner Startwert ohne Ladung (erster Eintrag ohne Zähler-Reset)
 
     const st = entryStats(readings, i);
     const row = (k, v) => `<div class="flex justify-between items-baseline mt-2"><span class="text-sm text-slate-500 dark:text-slate-400">${k}</span><span class="font-medium text-right">${v}</span></div>`;
     const extra = (r.odometerKm != null ? row('Kilometerstand', (st.km ? '<span class="text-xs font-normal text-slate-500">(+' + fmt(st.km, 0) + ' km)</span> ' : '') + fmt(r.odometerKm, 0) + ' km') : '') +
       (r.socStart != null && r.socEnd != null ? row('Ladestand', (st.loss != null && st.loss >= 0 && st.loss < 60 ? '<span class="text-xs font-normal text-slate-500">(Verlust ≈ ' + fmt(st.loss, 0) + ' %)</span> ' : '') + r.socStart + ' % → ' + r.socEnd + ' %') + row('Batteriekapazität', fmt(capOf(r), 1) + ' kWh') : '') +
-      (st.kwh100 != null ? row('Verbrauch/100 km', (st.kwh100Car != null ? '<span class="text-xs font-normal text-slate-500">(Auto: ' + fmt(st.kwh100Car, 1) + ' kWh)</span> ' : '') + (st.method === 'charge' ? '≈ ' : '') + fmt(st.kwh100, 1) + ' kWh · ' + eur(st.cost100))
+      (st.kwh100 != null ? row('Verbrauch/100 km', (st.method === 'charge' ? '≈ ' : '') + fmt(st.kwh100, 1) + ' kWh · ' + eur(st.cost100))
         + (st.method === 'charge' ? '<p class="text-xs text-slate-500 mt-1 text-right">grob: ohne Akku-% der letzten Ladung aus den geladenen kWh berechnet</p>' : st.rough ? '<p class="text-xs text-slate-500 mt-1 text-right">kleine Akku-Entnahme – Wert ungenau</p>' : '') : '') +
       (st.gap ? row('Verbrauch/100 km', '–') + '<p class="text-xs text-slate-500 mt-1 text-right">Akku-Start liegt über dem Ende der letzten Ladung – dazwischen wurde woanders geladen</p>' : '');
 
@@ -1321,7 +1321,7 @@ function renderHistory() {
         row('Ø Leistung am Zähler', (r.avgPowerKw != null ? '<span class="' + faint + '">(Auto: ' + fmt(r.avgPowerKw, 1) + ' kW)</span> ' : '') + fmt(r.consumedSinceLast / (realMs / 3600000), 1) + ' kW')
       : `<div class="flex justify-between items-baseline mt-2">
         <span class="text-sm text-slate-500 dark:text-slate-400">Ladedauer <span class="text-xs">(bei ${chargePowerKw()} kW)</span></span>
-        <span class="text-lg font-semibold">${oldVal === null && !r.meterReset ? '–' : fmtDuration(r.consumedSinceLast) + ' h'}</span>
+        <span class="text-lg font-semibold">${isStart ? '–' : fmtDuration(r.consumedSinceLast) + ' h'}</span>
       </div>`;
 
     if (editMode) {
@@ -1365,11 +1365,11 @@ function renderHistory() {
         <div><p class="${lbl}">Alt</p><p class="font-medium">${r.meterReset ? 'Reset' : oldVal === null ? '–' : fmt(oldVal)}</p></div>
         <div><p class="${lbl}">Neu</p><p class="font-medium">${fmt(r.totalReading)}</p></div>
         <div class="rounded-xl bg-emerald-50 dark:bg-emerald-950/50 py-1"><p class="${lbl}">Geladen</p>
-          <p class="font-semibold text-emerald-700 dark:text-emerald-300">${oldVal === null ? '–' : fmt(r.consumedSinceLast) + ' kWh'}</p></div>
+          <p class="font-semibold text-emerald-700 dark:text-emerald-300">${isStart ? '–' : fmt(r.consumedSinceLast) + ' kWh'}</p></div>
       </div>
       <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-        <span class="text-sm text-slate-500 dark:text-slate-400">Kosten${oldVal !== null && r.consumedSinceLast > 0 ? ` <span class="text-xs">(${fmt(unitPriceOf(r), 3)} €/kWh)</span>` : ''}</span>
-        <span class="text-lg font-semibold">${oldVal === null ? '–' : eur(r.cost)}</span>
+        <span class="text-sm text-slate-500 dark:text-slate-400">Kosten${!isStart && r.consumedSinceLast > 0 ? ` <span class="text-xs">(${fmt(unitPriceOf(r), 3)} €/kWh)</span>` : ''}</span>
+        <span class="text-lg font-semibold">${isStart ? '–' : eur(r.cost)}</span>
       </div>
       ${durRows}${extra}
     </li>`;
