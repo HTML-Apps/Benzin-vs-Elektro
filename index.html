@@ -183,11 +183,20 @@
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <p class="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-2"><span>Kilometerstand</span></p>
-      <div id="odo" class="flex justify-center gap-1"></div>
+      <div id="odo" class="flex justify-center gap-1 cursor-pointer" role="button" aria-label="Kilometerstand von Hand eingeben"></div>
       <input id="km-input" type="hidden">
       <div class="flex justify-between items-center gap-2 mt-3">
         <span id="odo-info" class="text-xs text-slate-500 dark:text-slate-400"></span>
-        <button id="btn-odo" class="shrink-0 text-sm px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Update</button>
+        <div class="flex gap-2 shrink-0">
+          <button id="btn-km-edit" type="button" class="shrink-0 text-sm px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Eingeben</button>
+          <button id="btn-odo" class="shrink-0 text-sm px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">Update</button>
+        </div>
+      </div>
+      <div id="km-edit-row" class="hidden mt-3 flex gap-2">
+        <input id="km-edit" type="text" inputmode="numeric" autocomplete="off" placeholder="Kilometerstand" aria-label="Kilometerstand"
+               class="flex-1 min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <button id="km-edit-ok" type="button" class="px-4 rounded-xl bg-emerald-600 text-white font-medium active:scale-95 transition">OK</button>
+        <button id="km-edit-cancel" type="button" aria-label="Abbrechen" class="px-3 rounded-xl bg-slate-200 dark:bg-slate-800 font-medium active:scale-95 transition">×</button>
       </div>
     </div>
 
@@ -257,10 +266,10 @@
 
   <!-- ============ VIEW: BERICHTE ============ -->
   <section id="view-report" class="view hidden space-y-4">
-    <p id="rep-print-app" class="hidden print:block text-sm text-slate-500"></p>
     <div class="flex items-center justify-between">
       <button id="rep-prev" type="button" aria-label="Vorheriger Monat" class="print:invisible w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center active:scale-95 transition disabled:opacity-30"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
       <div class="text-center">
+        <p id="rep-print-app" class="hidden print:block text-sm text-slate-500"></p>
         <h1 id="rep-title" class="text-xl font-semibold"></h1>
         <p id="rep-sub" class="text-xs text-slate-500 dark:text-slate-400"></p>
       </div>
@@ -319,7 +328,7 @@
         <button id="rep-pdf" type="button" class="py-3 rounded-2xl bg-slate-200 dark:bg-slate-800 text-sm font-medium active:scale-95 transition">Als PDF speichern</button>
       </div>
       <p id="rep-msg" class="hidden text-sm"></p>
-      <p class="text-xs text-slate-500 dark:text-slate-400 text-center">Verbrauch: Der km-Anteil einer Ladung ist die Differenz zum vorherigen Eintrag und kann im Vormonat beginnen. Zuordnung nach Ablesedatum.</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 text-center">Verbrauch: Energie, die zwischen zwei Ladungen aus dem Akku entnommen wurde (Ende-% der letzten bis Start-% dieser Ladung), umgerechnet auf die Steckdose. Ohne Akku-% grob aus den geladenen kWh. Zuordnung nach Ablesedatum.</p>
     </div>
   </section>
 
@@ -447,11 +456,35 @@ function paintOdo(reset) {
   const withKm = getReadings().filter(r => r.odometerKm != null), last = withKm[withKm.length - 1];
   const shown = fromCar ? kmVal : (last ? last.odometerKm : 0);
   $('odo').classList.toggle('odo-dim', !fromCar);
-  $('odo-info').textContent = fromCar ? 'Stand vom Auto – wird mitgespeichert' : (last ? 'Letzter bekannter Stand – wird nicht gespeichert' : 'Kein Stand vorhanden – wird nicht gespeichert');
+  const manual = $('km-input').dataset.manual === $('km-input').value;                   // von Hand eingegeben (nicht vom Auto)
+  const warn = fromCar && last && kmVal < last.odometerKm ? ' · kleiner als der letzte Stand (' + fmt(last.odometerKm, 0) + ' km)' : '';
+  $('odo-info').textContent = fromCar ? (manual ? 'Von Hand eingegeben' : 'Stand vom Auto') + ' – wird mitgespeichert' + warn : (last ? 'Letzter bekannter Stand – wird nicht gespeichert' : 'Kein Stand vorhanden – wird nicht gespeichert');
   if (reset) { odoCols.forEach(c => { c.style.transition = 'none'; c.style.transform = 'translateY(0)'; }); void $('odo').offsetWidth; }
   const t = String(Math.min(999999, Math.max(0, Math.round(shown)))).padStart(6, '0');
   odoCols.forEach((c, i) => { c.style.transition = ''; c.style.transitionDelay = (i * 90) + 'ms'; c.style.transform = 'translateY(calc(-3.1rem * ' + t[i] + '))'; });
 }
+
+/** Kilometerstand von Hand eingeben (Antippen der Trommeln oder Button "Eingeben"). Leeres Feld = kein km-Stand speichern. */
+function openKmEdit() {
+  const withKm = getReadings().filter(r => r.odometerKm != null), last = withKm[withKm.length - 1];
+  $('km-edit').value = $('km-input').value !== '' ? $('km-input').value : (last ? Math.round(last.odometerKm) : '');
+  $('km-edit-row').classList.remove('hidden'); $('km-edit').focus(); $('km-edit').select();
+}
+function closeKmEdit() { $('km-edit-row').classList.add('hidden'); }
+function commitKmEdit() {
+  const raw = $('km-edit').value.trim();
+  if (raw === '') { $('km-input').value = ''; delete $('km-input').dataset.manual; delete $('km-input').dataset.live; closeKmEdit(); paintOdo(true); return; }
+  const v = parseFloat(raw.replace(/[.\s]/g, '').replace(',', '.'));      // "42.310" = 42310 (Punkt als Tausendertrenner), Komma = Dezimalstelle
+  if (!isFinite(v) || v < 0 || v > 999999) { $('odo-info').textContent = 'Bitte einen gültigen Kilometerstand eingeben (0 bis 999999).'; return; }
+  const km = Math.round(v);
+  $('km-input').value = km; $('km-input').dataset.manual = String(km); delete $('km-input').dataset.live;   // von Hand gesetzt: wird beim Verwerfen der Simulation nicht gelöscht
+  closeKmEdit(); paintOdo(true);
+}
+$('btn-km-edit').addEventListener('click', openKmEdit);
+$('odo').addEventListener('click', openKmEdit);
+$('km-edit-ok').addEventListener('click', commitKmEdit);
+$('km-edit-cancel').addEventListener('click', closeKmEdit);
+$('km-edit').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); commitKmEdit(); } else if (e.key === 'Escape') closeKmEdit(); });
 
 function paintReading() {
   const raw = $('reading-input').value, v = parseNum(raw), ok = raw.trim() !== '' && isFinite(v) && v >= 0;
@@ -491,6 +524,7 @@ function dataChecks(rs) {
       const gap = Date.parse(r.date) - Date.parse(rs[i - 1].date);
       if (gap >= 0 && gap < 600000) add(i, 'dup', 'Weniger als 10 Minuten nach dem vorherigen Eintrag – doppelt erfasst?');
     }
+    if (s.gap) add(i, 'gap', 'Akku-Start (' + r.socStart + ' %) liegt über dem Ende der letzten Ladung (' + rs[i - 1].socEnd + ' %) – dazwischen wurde vermutlich woanders geladen. Der Verbrauch dieser Strecke ist nicht berechenbar.');
     if (s.kwh100 != null && (s.kwh100 < 5 || s.kwh100 > 50)) add(i, 'kwh100', 'Verbrauch ' + fmt(s.kwh100, 1) + ' kWh/100 km ist ungewöhnlich – km-Stand oder Zählerstand prüfen.');
     if (s.loss != null && (s.loss < 0 || s.loss > 35)) add(i, 'loss', 'Ladeverlust ' + fmt(s.loss, 0) + ' % ist unplausibel – Akku-% oder Kapazität prüfen.');
     if (r.odometerKm != null) {
@@ -583,19 +617,55 @@ const LEGACY_CAPACITY_KWH = 50;                              // Kapazität für 
 const capOf = (r) => r.capacityKwh ?? LEGACY_CAPACITY_KWH;   // Kapazität, die zum Zeitpunkt dieser Ladung galt
 const optNum = (s) => String(s).trim() === '' ? null : parseNum(s);      // leer -> null, ungültig -> NaN
 
-/** Kennzahlen eines Eintrags: Verbrauch/100 km (kWh seit der Vorgänger-Ladung / gefahrene km), gespeicherte Energie und Ladeverlust. */
+/** Wirkungsgrad (in der Batterie angekommen / am Zähler gemessen) aus allen Ladungen mit Start-/Ende-%; ohne Daten 90 %. Je Datensatz zwischengespeichert. */
+const effCache = new WeakMap();
+function avgEff(rs) {
+  if (effCache.has(rs)) return effCache.get(rs);
+  let chg = 0, st = 0;
+  rs.forEach(r => { if (r.socStart != null && r.socEnd != null && r.socEnd > r.socStart && r.consumedSinceLast > 0) { chg += r.consumedSinceLast; st += (r.socEnd - r.socStart) / 100 * capOf(r); } });
+  const eff = chg > 0 ? Math.min(1, Math.max(0.6, st / chg)) : 0.9;
+  effCache.set(rs, eff); return eff;
+}
+
+/** Kennzahlen eines Eintrags.
+ *  Verbrauch/100 km (genau, method 'soc'): Energie, die zwischen zwei Ladungen aus dem Akku entnommen wurde = (Ende-% der letzten Ladung − Start-% dieser Ladung) x Kapazität,
+ *  geteilt durch den Wirkungsgrad = Verbrauch an der Steckdose. So spielt es keine Rolle, ob zuletzt auf 80 oder 90 % geladen wurde.
+ *  Fallback (method 'charge'): geladene kWh dieser Ladung / km – nur richtig, wenn jedes Mal auf denselben Stand geladen wird. */
 function entryStats(rs, i) {
   const r = rs[i], prev = i > 0 ? rs[i - 1] : null, s = {};
   if (prev && r.odometerKm != null && prev.odometerKm != null && r.odometerKm > prev.odometerKm && r.consumedSinceLast > 0) {
     s.km = r.odometerKm - prev.odometerKm;
-    s.kwh100 = r.consumedSinceLast / s.km * 100;
-    s.cost100 = r.cost / s.km * 100;
+    if (prev.socEnd != null && r.socStart != null) {
+      if (r.socStart <= prev.socEnd) {
+        s.method = 'soc';
+        s.usedBat = (prev.socEnd - r.socStart) / 100 * capOf(r);          // aus dem Akku entnommen
+        s.usedWall = s.usedBat / avgEff(rs);                              // entspricht an der Steckdose
+        s.rough = s.usedBat < 3;                                          // 1 % Rundung ≈ 0,5 kWh -> bei kleinen Entnahmen ungenau
+      } else s.gap = true;                                                // Akku höher als nach der letzten Ladung: dazwischen wurde woanders geladen
+    } else { s.method = 'charge'; s.usedWall = r.consumedSinceLast; }
+    if (s.usedWall != null) {
+      s.kwh100 = s.usedWall / s.km * 100;
+      s.cost100 = s.usedWall * (r.cost / r.consumedSinceLast) / s.km * 100;
+      if (s.usedBat != null) s.kwh100Car = s.usedBat / s.km * 100;       // Verbrauch am Fahrzeug (ohne Ladeverluste)
+    }
   }
   if (r.socStart != null && r.socEnd != null && r.socEnd > r.socStart && r.consumedSinceLast > 0) {
     s.stored = (r.socEnd - r.socStart) / 100 * capOf(r);            // tatsächlich in der Batterie angekommene Energie
     s.loss = (1 - s.stored / r.consumedSinceLast) * 100;                    // Ladeverlust in %
   }
   return s;
+}
+
+/** Summiert den Verbrauch über Einträge: genaue Werte (Akku-%) werden bevorzugt, Näherungen nur, wenn es keine genauen gibt. */
+function consumptionTotals(rs, idxs) {
+  const acc = { soc: { km: 0, kwh: 0, cost: 0, n: 0 }, charge: { km: 0, kwh: 0, cost: 0, n: 0 } };
+  idxs.forEach(i => {
+    const s = entryStats(rs, i); if (s.usedWall == null) return;
+    const a = acc[s.method]; a.km += s.km; a.kwh += s.usedWall; a.cost += s.usedWall * rs[i].cost / rs[i].consumedSinceLast; a.n++;
+  });
+  const use = acc.soc.n ? acc.soc : acc.charge;
+  return { km: use.km, kwh: use.kwh, cost: use.cost, n: use.n, approx: !acc.soc.n && acc.charge.n > 0,
+           kwh100: use.km ? use.kwh / use.km * 100 : null, cost100: use.km ? use.cost / use.km * 100 : null };
 }
 
 /** Einziger Schreibweg für Zählerstände: lokaler Cache (localStorage) + Firestore (falls angemeldet, nur Änderungen). */
@@ -808,7 +878,7 @@ $('btn-save').addEventListener('click', () => {
     else if (s.startsWith('error:')) flash($('save-msg'), msg + ' · Cloud-Fehler: ' + s.slice(6), false);
   });
   $('save-msg').classList.remove('hidden');
-  $('reading-input').value = ''; ['reading-input', 'km-input', 'soc0-input', 'soc1-input'].forEach(id => { $(id).value = ''; delete $(id).dataset.live; }); updateCaptureDefaults();
+  $('reading-input').value = ''; ['reading-input', 'km-input', 'soc0-input', 'soc1-input'].forEach(id => { $(id).value = ''; delete $(id).dataset.live; delete $(id).dataset.manual; }); closeKmEdit(); updateCaptureDefaults();
 });
 
 /* =====================================================================
@@ -1119,16 +1189,16 @@ document.querySelectorAll('.stat-btn').forEach(b => b.addEventListener('click', 
 
 function renderEfficiency() {                            // gewichteter Durchschnitt über alle Einträge mit den nötigen Daten
   const rs = getReadings();
-  let km = 0, kwh = 0, cost = 0, chg = 0, stored = 0, nKm = 0, nSoc = 0;
+  let chg = 0, stored = 0, nSoc = 0;
   rs.forEach((r, i) => {
     const s = entryStats(rs, i);
-    if (s.km) { km += s.km; kwh += r.consumedSinceLast; cost += r.cost; nKm++; }
     if (s.stored !== undefined) { chg += r.consumedSinceLast; stored += s.stored; nSoc++; }
   });
-  $('eff-kwh').textContent = km ? fmt(kwh / km * 100, 1) : '–';
-  $('eff-cost').textContent = km ? eur(cost / km * 100) : '–';
+  const t = consumptionTotals(rs, rs.map((_, i) => i)), nKm = t.n;
+  $('eff-kwh').textContent = t.km ? fmt(t.kwh100, 1) : '–';
+  $('eff-cost').textContent = t.km ? eur(t.cost100) : '–';
   $('eff-loss').textContent = chg ? fmt(Math.max(0, (1 - stored / chg) * 100), 0) + ' %' : '–';
-  $('eff-note').textContent = (nKm || nSoc) ? 'Basis: ' + nKm + ' Ladungen mit km-Stand, ' + nSoc + ' mit Akku-Stand'
+  $('eff-note').textContent = (nKm || nSoc) ? 'Basis: ' + nKm + ' Ladungen mit km-Stand' + (t.approx ? ' (grob, ohne Akku-%)' : '') + ', ' + nSoc + ' mit Akku-Stand'
                                               : 'Erfasse km-Stand und Akku-% bei den Ladungen, um Werte zu sehen.';
 }
 
@@ -1241,7 +1311,9 @@ function renderHistory() {
     const row = (k, v) => `<div class="flex justify-between items-baseline mt-2"><span class="text-sm text-slate-500 dark:text-slate-400">${k}</span><span class="font-medium text-right">${v}</span></div>`;
     const extra = (r.odometerKm != null ? row('Kilometerstand', (st.km ? '<span class="text-xs font-normal text-slate-500">(+' + fmt(st.km, 0) + ' km)</span> ' : '') + fmt(r.odometerKm, 0) + ' km') : '') +
       (r.socStart != null && r.socEnd != null ? row('Ladestand', (st.loss != null && st.loss >= 0 && st.loss < 60 ? '<span class="text-xs font-normal text-slate-500">(Verlust ≈ ' + fmt(st.loss, 0) + ' %)</span> ' : '') + r.socStart + ' % → ' + r.socEnd + ' %') + row('Batteriekapazität', fmt(capOf(r), 1) + ' kWh') : '') +
-      (st.kwh100 ? row('Verbrauch/100 km', fmt(st.kwh100, 1) + ' kWh · ' + eur(st.cost100)) : '');
+      (st.kwh100 != null ? row('Verbrauch/100 km', (st.kwh100Car != null ? '<span class="text-xs font-normal text-slate-500">(Auto: ' + fmt(st.kwh100Car, 1) + ' kWh)</span> ' : '') + (st.method === 'charge' ? '≈ ' : '') + fmt(st.kwh100, 1) + ' kWh · ' + eur(st.cost100))
+        + (st.method === 'charge' ? '<p class="text-xs text-slate-500 mt-1 text-right">grob: ohne Akku-% der letzten Ladung aus den geladenen kWh berechnet</p>' : st.rough ? '<p class="text-xs text-slate-500 mt-1 text-right">kleine Akku-Entnahme – Wert ungenau</p>' : '') : '') +
+      (st.gap ? row('Verbrauch/100 km', '–') + '<p class="text-xs text-slate-500 mt-1 text-right">Akku-Start liegt über dem Ende der letzten Ladung – dazwischen wurde woanders geladen</p>' : '');
 
     const realMs = realMsOf(r), faint = 'text-xs font-normal text-slate-500';
     const durRows = realMs && r.consumedSinceLast > 0
@@ -1545,7 +1617,7 @@ const isoWeek = (d) => {                                  // ISO-Kalenderwoche
 function monthReport(y, m) {
   const rs = getReadings(), s = new Date(y, m, 1), e = new Date(y, m + 1, 1), wk = new Map();
   for (let d = new Date(s); d < e; d.setDate(d.getDate() + 1)) { const k = isoWeek(d); if (!wk.has(k)) wk.set(k, 0); }
-  const o = { y, m, charges: [], kwh: 0, cost: 0, km: 0, kwhKm: 0, costKm: 0, nKm: 0, chg: 0, stored: 0, nSoc: 0, lossCost: 0 };
+  const o = { y, m, charges: [], kwh: 0, cost: 0, km: 0, kwhKm: 0, costKm: 0, nKm: 0, chg: 0, stored: 0, nSoc: 0, lossCost: 0 }, idx = [];
   rs.forEach((r, i) => {
     const d = new Date(r.date);
     if (i === 0 || !(d >= s && d < e)) return;            // der erste Eintrag ist nur der Startwert
@@ -1553,21 +1625,24 @@ function monthReport(y, m) {
     o.kwh += c; o.cost += r.cost;
     wk.set(isoWeek(d), (wk.get(isoWeek(d)) || 0) + c);
     if (c > 0) o.charges.push({ r, d, st });
-    if (st.km) { o.km += st.km; o.kwhKm += c; o.costKm += r.cost; o.nKm++; }
+    idx.push(i);
     if (st.stored !== undefined) { o.chg += c; o.stored += st.stored; o.nSoc++; o.lossCost += (c - st.stored) * (r.cost / c); }
   });
   o.weeks = [...wk].map(([kw, kwh]) => ({ kw, kwh }));
-  o.kwh100 = o.km ? o.kwhKm / o.km * 100 : null;
-  o.cost100 = o.km ? o.costKm / o.km * 100 : null;
+  const t = consumptionTotals(rs, idx);                   // Verbrauch aus der Akku-Entnahme (falls Akku-% erfasst), sonst grob
+  o.km = t.km; o.kwhKm = t.kwh; o.costKm = t.cost; o.nKm = t.n; o.approx = t.approx;
+  o.kwh100 = t.km ? t.kwh100 : null;
+  o.cost100 = t.km ? t.cost100 : null;
   o.loss = o.chg > 0 ? Math.max(0, (1 - o.stored / o.chg) * 100) : null;
   o.lossCost = Math.max(0, o.lossCost);
   o.price = o.kwh > 0 ? o.cost / o.kwh : null;
   return o;
 }
 const prevMonthOf = (d = new Date()) => new Date(d.getFullYear(), d.getMonth() - 1, 1);
-function defaultReportMonth() {                           // Standard: letzter abgeschlossener Monat, sonst der laufende
-  const n = new Date(), p = prevMonthOf(n);
-  return monthReport(p.getFullYear(), p.getMonth()).charges.length ? { y: p.getFullYear(), m: p.getMonth() } : { y: n.getFullYear(), m: n.getMonth() };
+function defaultReportMonth() {                           // Standard: laufender Monat, wenn er Ladungen hat; sonst der Vormonat
+  const n = new Date(), p = prevMonthOf(n), cur = { y: n.getFullYear(), m: n.getMonth() };
+  if (monthReport(cur.y, cur.m).charges.length) return cur;
+  return monthReport(p.getFullYear(), p.getMonth()).charges.length ? { y: p.getFullYear(), m: p.getMonth() } : cur;
 }
 function markReportSeen(y, m) {
   const p = prevMonthOf();
@@ -1626,7 +1701,7 @@ function renderReport() {
   $('rep-kwh100').textContent = r.kwh100 != null ? fmt(r.kwh100, 1) : '–';
   $('rep-cost100').textContent = r.cost100 != null ? fmt(r.cost100, 2) : '–';
   $('rep-loss').textContent = r.loss != null ? fmt(r.loss, 0) + ' %' : '–';
-  $('rep-eff-note').textContent = (r.km ? fmt(r.km, 0) + ' km gefahren' : 'Kein km-Stand erfasst') + (r.loss != null ? ' · Verlust kostete ca. ' + eur(r.lossCost) : '');
+  $('rep-eff-note').textContent = (r.km ? fmt(r.km, 0) + ' km gefahren' : 'Kein km-Stand erfasst') + (r.approx ? ' · Verbrauch grob (ohne Akku-%)' : '') + (r.loss != null ? ' · Verlust kostete ca. ' + eur(r.lossCost) : '');
 
   /* Vergleich + Jahr */
   let ytdCost = 0, ytdKwh = 0, ytdMonths = 0;
