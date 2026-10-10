@@ -196,10 +196,10 @@
 
     <div id="cap-away-card" class="hidden rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       <div id="cap-away-grid" class="grid grid-cols-3 gap-2">
-        <div><label for="kwh-input" class="text-xs text-slate-500 dark:text-slate-400">kWh laut Säule</label><input id="kwh-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 10,4" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
-        <div><label for="price-input" class="text-xs text-slate-500 dark:text-slate-400">Preis €/kWh</label><input id="price-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 0,45" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
-        <div id="fee-wrap" class="hidden min-w-0"><label for="fee-input" class="text-xs text-slate-500 dark:text-slate-400">Gebühren €</label><input id="fee-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 1,00" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
-        <div id="prov-wrap" class="hidden min-w-0"><label for="prov-input" class="text-xs text-slate-500 dark:text-slate-400">Anbieter</label><select id="prov-input" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-1 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></select></div>
+        <div><label for="kwh-input" class="text-xs text-slate-500 dark:text-slate-400">kWh laut Säule</label><input id="kwh-input" type="text" inputmode="decimal" autocomplete="off"  placeholder="z. B. 10,4" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        <div><label for="price-input" class="text-xs text-slate-500 dark:text-slate-400">Preis €/kWh</label><input id="price-input" type="text" inputmode="decimal" autocomplete="off"  placeholder="z. B. 0,45" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        <div id="fee-wrap" class="hidden min-w-0"><label for="fee-input" class="text-xs text-slate-500 dark:text-slate-400">Gebühren €</label><input id="fee-input" type="text" inputmode="decimal" autocomplete="off"  placeholder="z. B. 1,00" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        <div id="prov-wrap" class="hidden min-w-0"><label for="prov-input" class="text-xs text-slate-500 dark:text-slate-400">Anbieter</label><select id="prov-input" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-1.5 py-0 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></select></div>
       </div>
     </div>
 
@@ -1575,7 +1575,7 @@ function renderHistory() {
             <div><p class="${lbl} mb-1">Geladen kWh</p><input data-f="kwh" type="text" inputmode="decimal" value="${!home && r.consumedSinceLast > 0 ? String(r.consumedSinceLast).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
             <div><p class="${lbl} mb-1">Preis €/kWh</p><input data-f="price" type="text" inputmode="decimal" value="${!home && r.pricePerKwh != null ? String(r.pricePerKwh).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
             <div class="min-w-0">
-              <div class="g-prov${place === 'away' ? '' : ' hidden'}"><p class="${lbl} mb-1">Anbieter</p><select data-f="prov" class="${INPUT_CLS} px-1 text-sm">${providerOptions(r.provider || '')}</select></div>
+              <div class="g-prov${place === 'away' ? '' : ' hidden'}"><p class="${lbl} mb-1">Anbieter</p><select data-f="prov" class="${INPUT_CLS} h-[42px] px-1 py-0 text-sm">${providerOptions(r.provider || '')}</select></div>
               <div class="g-fee${place === 'bosch' ? '' : ' hidden'}"><p class="${lbl} mb-1">Gebühren €</p><input data-f="fee" type="text" inputmode="decimal" value="${r.fee != null ? String(r.fee).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
             </div>
           </div>
