@@ -195,9 +195,10 @@
     </div>
 
     <div id="cap-away-card" class="hidden rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <div class="grid grid-cols-2 gap-2">
+      <div id="cap-away-grid" class="grid grid-cols-2 gap-2">
         <div><label for="kwh-input" class="text-xs text-slate-500 dark:text-slate-400">kWh laut Säule</label><input id="kwh-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 10,4" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
         <div><label for="price-input" class="text-xs text-slate-500 dark:text-slate-400">Preis €/kWh</label><input id="price-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 0,45" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        <div id="prov-wrap" class="hidden min-w-0"><label for="prov-input" class="text-xs text-slate-500 dark:text-slate-400">Anbieter</label><select id="prov-input" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-1 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></select></div>
       </div>
     </div>
 
@@ -398,6 +399,16 @@
                class="mt-1 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
         
       </div>
+      <div>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Ladeanbieter (für „Unterwegs“)</p>
+        <div id="prov-list" class="flex flex-wrap gap-1.5 mt-2"></div>
+        <div class="flex gap-2 mt-2">
+          <input id="prov-new" type="text" maxlength="30" autocomplete="off" placeholder="z. B. Shell Recharge"
+                 class="min-w-0 flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <button id="btn-prov-add" type="button" aria-label="Anbieter hinzufügen" class="w-12 shrink-0 rounded-xl bg-emerald-600 text-white text-xl font-semibold active:scale-95 transition">+</button>
+        </div>
+        <p id="prov-msg" class="text-xs text-slate-500 dark:text-slate-400 mt-1 min-h-[1rem]"></p>
+      </div>
       <button id="btn-save-settings" class="w-full py-3 rounded-2xl bg-emerald-600 text-white font-semibold active:scale-95 transition">Einstellungen speichern</button>
       <p id="settings-msg" class="hidden text-sm text-emerald-700 dark:text-emerald-400">Gespeichert.</p>
     </div>
@@ -456,6 +467,7 @@
 const ENABLE_AI_SCAN = false;
 const KEY_READINGS = 'enyaq.readings';
 const KEY_SETTINGS = 'enyaq.settings';
+const KEY_PROVIDERS = 'enyaq.providers';          // Ladeanbieter für "Unterwegs" (lokal + Cloud-Dokument enyaqStrom/<uid>/settings/providers)
 const PROXY_URL = '/api/read-meter';   // Vercel-Funktion; der Prompt und der OpenAI-Key liegen dort
 
 const $ = (id) => document.getElementById(id);
@@ -497,6 +509,12 @@ const isCharge = (rs, i) => isHome(rs[i]) ? !isStartRow(rs, i) && rs[i].consumed
 /** Preis pro kWh dieses Eintrags: Zuhause aus den gespeicherten Werten (Einstellungen zum Zeitpunkt), sonst der eingetragene Preis (oder null). */
 const unitOf = (r) => isHome(r) ? (r.consumedSinceLast > 0 ? r.cost / r.consumedSinceLast : getSettings().price) : (r.pricePerKwh ?? null);
 const PLACE_BADGE = { bosch: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200', away: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200' };
+const esc = (v) => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));   // Namen von Hand eingegeben -> vor innerHTML maskieren
+const getProviders = () => { const l = load(KEY_PROVIDERS, []); return Array.isArray(l) ? l.filter(n => typeof n === 'string' && n.trim()) : []; };
+const providerOptions = (selected) => {              // <option>-Liste: leer + Anbieter (ein nicht mehr gelistetes, aber gespeichertes Ziel bleibt wählbar)
+  const list = getProviders(); if (selected && !list.includes(selected)) list.push(selected);
+  return '<option value="">–</option>' + list.map(n => `<option value="${esc(n)}" ${n === selected ? 'selected' : ''}>${esc(n)}</option>`).join('');
+};
 let capPlace = 'home', dashPlace = 'home', repPlace = 'home';      // gewählter Ladeort in Erfassen / Dashboard / Bericht
 /** Hebt in einer Segment-Auswahl (Buttons mit data-place) den aktiven Ort hervor. */
 function segPaint(sel, active) {
@@ -978,7 +996,8 @@ $('btn-save').addEventListener('click', () => {
     const prevH = lastHome(readings), cost = kwh != null && price != null ? kwh * price : 0;
     entry = { id: Date.now(), date: new Date().toISOString(), place, totalReading: prevH ? prevH.totalReading : 0, consumedSinceLast: kwh ?? 0, cost };
     if (price != null) entry.pricePerKwh = price;
-    msg = 'Gespeichert (' + PLACES[place] + '): ' + (kwh != null ? fmt(kwh) + ' kWh' : s0 + ' → ' + s1 + ' %') + (cost > 0 ? ', ' + eur(cost) : '');
+    if (place === 'away' && $('prov-input').value) entry.provider = $('prov-input').value;      // optional: Ladeanbieter (Auswertungen fassen weiter als "Unterwegs" zusammen)
+    msg = 'Gespeichert (' + (entry.provider || PLACES[place]) + '): ' + (kwh != null ? fmt(kwh) + ' kWh' : s0 + ' → ' + s1 + ' %') + (cost > 0 ? ', ' + eur(cost) : '');
   }
   if (km != null) entry.odometerKm = km;                // optionale Felder nur setzen, wenn vorhanden (Firestore verbietet undefined)
   if (s0 != null) entry.socStart = s0;
@@ -1002,7 +1021,7 @@ $('btn-save').addEventListener('click', () => {
     else if (s.startsWith('error:')) flash($('save-msg'), msg + ' · Cloud-Fehler: ' + s.slice(6), false);
   });
   $('save-msg').classList.remove('hidden');
-  ['reading-input', 'km-input', 'soc0-input', 'soc1-input', 'kwh-input', 'price-input'].forEach(id => { $(id).value = ''; delete $(id).dataset.live; delete $(id).dataset.manual; delete $(id).dataset.auto; });
+  ['reading-input', 'km-input', 'soc0-input', 'soc1-input', 'kwh-input', 'price-input', 'prov-input'].forEach(id => { $(id).value = ''; delete $(id).dataset.live; delete $(id).dataset.manual; delete $(id).dataset.auto; });
   closeKmEdit(); setCapPlace('home');                    // nächste Erfassung startet wieder bei Zuhause
 });
 
@@ -1013,6 +1032,17 @@ function setCapPlace(p) {
   segPaint('.cap-place-btn', capPlace);
   $('cap-meter-card').classList.toggle('hidden', !home);
   $('cap-away-card').classList.toggle('hidden', home);
+  const away = capPlace === 'away';                      // Anbieter-Auswahl nur bei "Unterwegs"
+  $('prov-wrap').classList.toggle('hidden', !away); $('cap-away-grid').classList.toggle('grid-cols-3', away); $('cap-away-grid').classList.toggle('grid-cols-2', !away);
+  if (away) {
+    const sel = $('prov-input'), keep = sel.value;
+    sel.innerHTML = providerOptions('');                 // aktuelle Liste aus den Einstellungen
+    if (keep && getProviders().includes(keep)) sel.value = keep;
+    else if (!keep || sel.dataset.auto) {                // zuletzt benutzten Anbieter vorschlagen
+      const last = getReadings().reverse().find(r => placeOf(r) === 'away' && r.provider && getProviders().includes(r.provider));
+      sel.value = last ? last.provider : ''; if (last) sel.dataset.auto = '1'; else delete sel.dataset.auto;
+    }
+  }
   $('cap-title').textContent = home ? 'Zählerstand erfassen' : 'Ladung erfassen: ' + PLACES[capPlace];
   if (!home) {
     ['soc0-input', 'soc1-input', 'km-input'].forEach(id => { if ($(id).dataset.live) { $(id).value = ''; delete $(id).dataset.live; } });   // Live-Vorbelegung gilt nur für Zuhause
@@ -1027,17 +1057,54 @@ function setCapPlace(p) {
 }
 document.querySelectorAll('.cap-place-btn').forEach(b => b.addEventListener('click', () => setCapPlace(b.dataset.place)));
 $('price-input').addEventListener('input', (e) => { delete e.target.dataset.auto; });
+$('prov-input').addEventListener('change', (e) => { delete e.target.dataset.auto; });
 
 /* =====================================================================
    Einstellungen
    ===================================================================== */
 function fillSettings() {
+  renderProviders();
   const s = getSettings();
   $('set-price').value = String(s.price).replace('.', ',');
   $('set-battery').value = String(batteryKwh()).replace('.', ',');
   $('set-title').value = s.title || DEFAULT_TITLE;
   $('set-power').value = String(chargePowerKw()).replace('.', ',');
 }
+/** Ladeanbieter: speichern sofort (lokal und, wenn angemeldet, in der Cloud). Ältere Einträge behalten ihren Anbieter-Namen. */
+function renderProviders() {
+  const l = getProviders();
+  $('prov-list').innerHTML = l.length ? l.map((n, i) => `<span class="inline-flex items-center gap-1 pl-3 pr-1 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm max-w-full"><span class="truncate">${esc(n)}</span><button type="button" data-del="${i}" aria-label="${esc(n)} entfernen" class="w-6 h-6 shrink-0 rounded-lg text-slate-500 hover:text-red-600 active:scale-95">×</button></span>`).join('')
+                              : '<span class="text-xs text-slate-500 dark:text-slate-400">Noch keine Anbieter angelegt.</span>';
+}
+function setProviders(list) {
+  save(KEY_PROVIDERS, list); renderProviders();
+  if (capPlace === 'away') setCapPlace('away');           // Auswahl in der Erfassen-Maske aktualisieren
+  const msg = $('prov-msg');
+  if (!window.cloud?.isSignedIn()) { msg.textContent = 'Gespeichert (nur lokal, nicht angemeldet).'; return; }
+  msg.textContent = 'Gespeichert · Cloud: wird übertragen …';
+  window.cloud.setProviders(list).then(() => { msg.textContent = 'Gespeichert · Cloud ✓'; })
+    .catch(e => { msg.textContent = 'Lokal gespeichert, Cloud-Fehler: ' + (e.code || e.message) + (e.code === 'permission-denied' ? ' (Firestore-Regel für enyaqStrom/<uid>/settings ergänzen)' : ''); });
+}
+function addProvider() {
+  const inp = $('prov-new'), name = inp.value.trim().replace(/\s+/g, ' ').slice(0, 30), l = getProviders();
+  if (!name) return;
+  if (l.some(n => n.toLowerCase() === name.toLowerCase())) { $('prov-msg').textContent = '„' + name + '“ gibt es schon.'; return; }
+  if (l.length >= 20) { $('prov-msg').textContent = 'Maximal 20 Anbieter.'; return; }
+  inp.value = ''; setProviders(l.concat(name));
+}
+$('btn-prov-add').addEventListener('click', addProvider);
+$('prov-new').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addProvider(); } });
+$('prov-list').addEventListener('click', e => {
+  const i = e.target.dataset.del; if (i === undefined) return;
+  const l = getProviders(); l.splice(+i, 1); setProviders(l);
+});
+/** Cloud-Abgleich der Liste: beim ersten Abgleich werden lokale und Cloud-Anbieter zusammengeführt, danach gilt die Cloud (Löschen wirkt auf allen Geräten). */
+window.onCloudProviders = (list, first) => {
+  const local = getProviders();
+  let next = Array.isArray(list) ? list.filter(n => typeof n === 'string' && n.trim()) : [];
+  if (first) { const merged = next.concat(local.filter(n => !next.some(m => m.toLowerCase() === n.toLowerCase()))); if (merged.length !== next.length || !Array.isArray(list)) { next = merged; if (next.length) window.cloud.setProviders(next).catch(() => {}); } }
+  if (JSON.stringify(next) !== JSON.stringify(local)) { save(KEY_PROVIDERS, next); renderProviders(); if (capPlace === 'away') setCapPlace('away'); }
+};
 $('btn-save-settings').addEventListener('click', () => {
   const price = parseNum($('set-price').value);
   if (!isFinite(price) || price < 0) { alert('Bitte einen gültigen Strompreis eingeben (z. B. 0,307).'); return; }
@@ -1051,7 +1118,7 @@ $('btn-save-settings').addEventListener('click', () => {
 });
 $('btn-wipe').addEventListener('click', () => {
   if (confirm('Wirklich ALLE Zählerstände und Einstellungen löschen?' + (window.cloud?.isSignedIn() ? ' Auch die Daten in der Cloud werden gelöscht.' : '') + ' Das kann nicht rückgängig gemacht werden.')) {
-    commitReadings([]); localStorage.removeItem(KEY_SETTINGS); fillSettings(); alert('Alle Daten wurden gelöscht.');
+    commitReadings([]); localStorage.removeItem(KEY_SETTINGS); setProviders([]); fillSettings(); alert('Alle Daten wurden gelöscht.');
   }
 });
 
@@ -1502,9 +1569,10 @@ function renderHistory() {
           </div>
         </div>
         <div class="g-away${ga}">
-          <div class="grid grid-cols-2 gap-2 mt-3 text-center">
+          <div class="grid grid-cols-3 gap-2 mt-3 text-center">
             <div><p class="${lbl} mb-1">Geladen kWh</p><input data-f="kwh" type="text" inputmode="decimal" value="${!home && r.consumedSinceLast > 0 ? String(r.consumedSinceLast).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
             <div><p class="${lbl} mb-1">Preis €/kWh</p><input data-f="price" type="text" inputmode="decimal" value="${!home && r.pricePerKwh != null ? String(r.pricePerKwh).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
+            <div class="g-prov min-w-0${place === 'away' ? '' : ' invisible'}"><p class="${lbl} mb-1">Anbieter</p><select data-f="prov" class="${INPUT_CLS} px-1 text-sm">${providerOptions(r.provider || '')}</select></div>
           </div>
           <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
             <span class="text-sm text-slate-500 dark:text-slate-400">Kosten</span>
@@ -1535,7 +1603,7 @@ function renderHistory() {
       return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       ${head}
       <div class="grid grid-cols-3 gap-2 mt-3 text-center">
-        <div><p class="${lbl}">Ort</p><p class="mt-0.5"><span class="text-xs px-2.5 py-1 rounded-lg ${PLACE_BADGE[place]}">${PLACES[place]}</span></p></div>
+        <div class="min-w-0"><p class="${lbl}">Ort</p><p class="mt-0.5"><span class="inline-block max-w-full truncate align-bottom text-xs px-2.5 py-1 rounded-lg ${PLACE_BADGE[place]}">${esc(r.provider || PLACES[place])}</span></p></div>
         <div><p class="${lbl}">Preis</p><p class="font-medium">${hasPrice ? fmt(r.pricePerKwh, 3) + ' €' : '–'}</p></div>
         <div class="rounded-xl bg-emerald-50 dark:bg-emerald-950/50 py-1"><p class="${lbl}">Geladen</p>
           <p class="font-semibold text-emerald-700 dark:text-emerald-300">${hasKwh ? fmt(r.consumedSinceLast) + ' kWh' : '–'}</p></div>
@@ -1571,6 +1639,7 @@ const domPlace = (i) => cell(i, 'place')?.value || 'home';
 function togglePlaceGroups(li, place) {
   li.querySelectorAll('.g-home').forEach(el => el.classList.toggle('hidden', place !== 'home'));
   li.querySelectorAll('.g-away').forEach(el => el.classList.toggle('hidden', place === 'home'));
+  li.querySelectorAll('.g-prov').forEach(el => el.classList.toggle('invisible', place !== 'away'));
 }
 /** "Alt" eines Zuhause-Eintrags und "Neu" des vorherigen Zuhause-Eintrags sind derselbe Wert (Bosch/Unterwegs dazwischen zählen nicht). */
 function syncOlds() {
@@ -1632,7 +1701,7 @@ $('btn-edit-save').addEventListener('click', () => {
   const all = stored.map((r, i) => ({
     r, date: new Date(cell(i, 'date').value), place: domPlace(i), neu: Math.round(parseNum(cell(i, 'new').value) * 10) / 10,
     cap: parseNum(cell(i, 'cap').value), reset: cell(i, 'reset')?.checked === true, km: optNum(cell(i, 'km').value), s0: optNum(cell(i, 's0').value), s1: optNum(cell(i, 's1').value),
-    kwh: optNum(cell(i, 'kwh').value), price: optNum(cell(i, 'price').value), del: cell(i, 'delbtn').dataset.del === '1'
+    kwh: optNum(cell(i, 'kwh').value), price: optNum(cell(i, 'price').value), prov: cell(i, 'prov')?.value || '', del: cell(i, 'delbtn').dataset.del === '1'
   }));
   const live = all.filter(x => !x.del);
   if (live.some(x => isNaN(x.date) || (x.place === 'home' && (!isFinite(x.neu) || x.neu < 0)))) { alert('Bitte gültige Datums- und Zählerstandswerte eingeben.'); return; }
@@ -1659,12 +1728,13 @@ $('btn-edit-save').addEventListener('click', () => {
       const unitPrice = wasHome && x.r.consumedSinceLast > 0 ? x.r.cost / x.r.consumedSinceLast : currentPrice;
       const consumed = x.reset ? x.neu : (prevHomeNew != null ? Math.max(0, Math.round((x.neu - prevHomeNew) * 10) / 10) : 0);
       out = { ...x.r, ...common, totalReading: x.neu, consumedSinceLast: consumed, cost: consumed * unitPrice };
-      delete out.place; delete out.pricePerKwh;
+      delete out.place; delete out.pricePerKwh; delete out.provider;
       if (x.reset) out.meterReset = true; else delete out.meterReset;
       prevHomeNew = x.neu;
     } else {
       out = { ...x.r, ...common, place: x.place, totalReading: prevHomeNew ?? 0, consumedSinceLast: x.kwh ?? 0, cost: x.kwh != null && x.price != null ? x.kwh * x.price : 0 };
       if (x.price != null) out.pricePerKwh = x.price; else delete out.pricePerKwh;
+      if (x.place === 'away' && x.prov) out.provider = x.prov; else delete out.provider;
       delete out.meterReset; delete out.chargeStart; delete out.chargeEnd; delete out.avgPowerKw;     // Zähler-/Live-Daten gibt es nur zuhause
     }
     if (x.km != null) out.odometerKm = x.km; else delete out.odometerKm;       // geleerte Felder wirklich entfernen
@@ -1697,7 +1767,7 @@ if (document.fonts) document.fonts.ready.then(fitSeg);
    Export / Import der Zählerstände
    Dateiformat (JSON):
    { "app": "enyaq-ladekosten", "version": 1, "exportedAt": "<ISO-Datum>", "chargePowerKw": 7,
-     "readings": [ { id, date, totalReading, consumedSinceLast, cost, chargeDuration ("hh:mm"), place ("bosch" | "away"; fehlt = Zuhause), pricePerKwh }, … ] }
+     "readings": [ { id, date, totalReading, consumedSinceLast, cost, chargeDuration ("hh:mm"), place ("bosch" | "away"; fehlt = Zuhause), pricePerKwh, provider (Ladeanbieter, nur bei "away") }, … ] }
    Die Felder "app" und "version" dienen dem Wiedererkennen beim Import. Einstellungen werden nicht exportiert.
    "chargeDuration" ist ein abgeleiteter Wert (kWh / Ladeleistung): Er wird exportiert und beim Import geprüft,
    aber nicht gespeichert, sondern bei der Anzeige immer neu berechnet.
@@ -1739,6 +1809,7 @@ function parseImport(text) {
       if (!PLACES[r.place]) throw new Error('Ladeort in Eintrag ' + (i + 1) + ' ist ungültig.');
       if (r.place !== 'home') out.place = r.place;
     }
+    if (typeof r.provider === 'string' && r.provider.trim() && out.place === 'away') out.provider = r.provider.trim().slice(0, 30);   // Ladeanbieter nur bei "Unterwegs"
     for (const k of ['odometerKm', 'socStart', 'socEnd', 'capacityKwh', 'avgPowerKw', 'pricePerKwh']) {            // optionale Felder prüfen und übernehmen
       if (r[k] === undefined || r[k] === null) continue;
       if (typeof r[k] !== 'number' || !isFinite(r[k]) || r[k] < 0 || (k === 'capacityKwh' ? (r[k] < 10 || r[k] > 200) : (k !== 'odometerKm' && r[k] > 100))) throw new Error('Feld ' + k + ' in Eintrag ' + (i + 1) + ' ist ungültig.');
@@ -2045,7 +2116,7 @@ showView('dashboard');
 /* Firebase (modular SDK). Die Konfiguration ist kein Geheimnis – geschützt wird über Auth + Firestore-Regeln. */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, onSnapshot, writeBatch } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, onSnapshot, writeBatch, setDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
 const app = initializeApp({
   apiKey: "AIzaSyDM_1SM3ueFYhAB7zkHO8SG5VVOCsMu_0c", authDomain: "daily-companion-24975.firebaseapp.com",
@@ -2054,12 +2125,14 @@ const app = initializeApp({
 });
 const auth = getAuth(app);
 const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });   // Offline-Queue
-let user = null, unsub = null;
+let user = null, unsub = null, unsubP = null;
 const col = () => collection(db, 'enyaqStrom', user.uid, 'readings');
-const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost, r.odometerKm, r.socStart, r.socEnd, r.capacityKwh, r.chargeStart, r.chargeEnd, r.avgPowerKw, r.meterReset, r.place, r.pricePerKwh].join('|');
+const provDoc = () => doc(db, 'enyaqStrom', user.uid, 'settings', 'providers');     // eigenes Dokument für die Anbieter-Liste
+const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost, r.odometerKm, r.socStart, r.socEnd, r.capacityKwh, r.chargeStart, r.chargeEnd, r.avgPowerKw, r.meterReset, r.place, r.pricePerKwh, r.provider].join('|');
 
 window.cloud = {
   isSignedIn: () => !!user,
+  setProviders: (list) => user ? setDoc(provDoc(), { list, updatedAt: new Date().toISOString() }) : Promise.resolve(),
   token: () => user ? user.getIdToken() : Promise.resolve(null),       // Anmelde-Token für die Vercel-Funktionen
   login: () => signInWithPopup(auth, new GoogleAuthProvider()),
   logout: () => signOut(auth),
@@ -2078,9 +2151,12 @@ window.cloud = {
 };
 
 onAuthStateChanged(auth, (u) => {
-  user = u; if (unsub) { unsub(); unsub = null; }
+  user = u; if (unsub) { unsub(); unsub = null; } if (unsubP) { unsubP(); unsubP = null; }
   window.onCloudStatus?.(u ? { email: u.email || u.displayName || 'Konto', uid: u.uid } : null);
   if (!u) return;
+  let firstP = true;
+  unsubP = onSnapshot(provDoc(), (snap) => { window.onCloudProviders?.(snap.exists() ? snap.data().list : null, firstP); firstP = false; },
+    (err) => window.onCloudStatus?.({ error: 'Anbieter-Liste: ' + (err.code === 'permission-denied' ? 'Keine Berechtigung für enyaqStrom/<uid>/settings (Firestore-Regel ergänzen)' : err.message) }));
   let first = true;
   unsub = onSnapshot(col(), (snap) => {
     window.onCloudReadings(snap.docs.map(d => d.data()), first, u.uid); first = false;
