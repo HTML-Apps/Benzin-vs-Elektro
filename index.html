@@ -195,16 +195,16 @@
     </div>
 
     <div id="cap-away-card" class="hidden rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <div id="cap-away-grid" class="grid grid-cols-3 gap-2">
-        <div><label for="kwh-input" class="text-xs text-slate-500 dark:text-slate-400">kWh laut Säule</label><input id="kwh-input" type="text" inputmode="decimal" autocomplete="off"  placeholder="z. B. 10,4" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
-        <div><label for="price-input" class="text-xs text-slate-500 dark:text-slate-400">Preis €/kWh</label><input id="price-input" type="text" inputmode="decimal" autocomplete="off"  placeholder="z. B. 0,45" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
-        <div id="fee-wrap" class="hidden min-w-0"><label for="fee-input" class="text-xs text-slate-500 dark:text-slate-400">Gebühren €</label><input id="fee-input" type="text" inputmode="decimal" autocomplete="off"  placeholder="z. B. 1,00" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
-        <div id="prov-wrap" class="hidden min-w-0"><label for="prov-input" class="text-xs text-slate-500 dark:text-slate-400">Anbieter</label><select id="prov-input" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-1.5 py-0 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></select></div>
+      <div id="cap-away-grid" class="grid gap-1.5" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+        <div class="min-w-0"><label for="kwh-input" class="block truncate text-xs text-slate-500 dark:text-slate-400">kWh</label><input id="kwh-input" type="text" inputmode="decimal" autocomplete="off"  placeholder="10,4" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-1.5 py-2 text-center text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        <div class="min-w-0"><label for="price-input" class="block truncate text-xs text-slate-500 dark:text-slate-400">€/kWh</label><input id="price-input" type="text" inputmode="decimal" autocomplete="off"  placeholder="0,59" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-1.5 py-2 text-center text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        <div id="fee-wrap" class="hidden min-w-0"><label for="fee-input" class="block truncate text-xs text-slate-500 dark:text-slate-400">Gebühr €</label><input id="fee-input" type="text" inputmode="decimal" autocomplete="off"  placeholder="1,00" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-1.5 py-2 text-center text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        <div id="prov-wrap" class="hidden min-w-0"><label for="prov-input" class="block truncate text-xs text-slate-500 dark:text-slate-400">Anbieter</label><select id="prov-input" class="w-full min-w-0 h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-1.5 py-0 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></select></div>
       </div>
     </div>
 
     <div class="rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <p class="flex justify-between text-sm text-slate-500 dark:text-slate-400 mb-1.5"><span>Kilometerstand</span></p>
+      <p class="flex items-baseline justify-between gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1.5"><span>KM</span><span id="odo-info" class="min-w-0 truncate text-xs text-right"></span></p>
       <div class="flex items-center gap-2">
         <div id="odo" class="flex justify-start cursor-pointer min-w-0 shrink-0" role="button" aria-label="Kilometerstand von Hand eingeben"></div>
         <div class="flex flex-col gap-1 shrink-0 ml-auto w-20">
@@ -213,7 +213,6 @@
         </div>
       </div>
       <input id="km-input" type="hidden">
-      <p id="odo-info" class="text-xs text-slate-500 dark:text-slate-400 mt-1.5"></p>
       <div id="km-edit-row" class="hidden mt-3 flex gap-2">
         <input id="km-edit" type="text" inputmode="numeric" autocomplete="off" placeholder="Kilometerstand" aria-label="Kilometerstand"
                class="flex-1 min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -549,8 +548,10 @@ function paintOdo(reset) {
   const shown = fromCar ? kmVal : (last ? last.odometerKm : 0);
   $('odo').classList.toggle('odo-dim', !fromCar);
   const manual = $('km-input').dataset.manual === $('km-input').value;                   // von Hand eingegeben (nicht vom Auto)
-  const warn = fromCar && last && kmVal < last.odometerKm ? ' · kleiner als der letzte Stand (' + fmt(last.odometerKm, 0) + ' km)' : '';
-  $('odo-info').textContent = fromCar ? (manual ? 'Von Hand eingegeben' : 'Stand vom Auto') + ' – wird mitgespeichert' + warn : (last ? 'Letzter bekannter Stand – wird nicht gespeichert' : 'Kein Stand vorhanden – wird nicht gespeichert');
+  const warn = fromCar && last && kmVal < last.odometerKm;                                  // kleiner als der letzte gespeicherte Stand
+  $('odo-info').textContent = warn ? 'Kleiner als ' + fmt(last.odometerKm, 0) + ' – wird gespeichert'
+    : fromCar ? (manual ? 'Von Hand' : 'Stand vom Auto') + ' – wird gespeichert' : (last ? 'Letzter Stand – keine Sicherung' : 'Kein Stand vorhanden – keine Sicherung');
+  $('odo-info').classList.toggle('text-amber-600', !!warn); $('odo-info').classList.toggle('dark:text-amber-400', !!warn);
   if (reset) { odoCols.forEach(c => { c.style.transition = 'none'; c.style.transform = 'translateY(0)'; }); void $('odo').offsetWidth; }
   const t = String(Math.min(999999, Math.max(0, Math.round(shown)))).padStart(6, '0');
   odoCols.forEach((c, i) => { c.style.transition = ''; c.style.transitionDelay = (i * 90) + 'ms'; c.style.transform = 'translateY(calc(-2.4rem * ' + t[i] + '))'; });
@@ -567,7 +568,7 @@ function commitKmEdit() {
   const raw = $('km-edit').value.trim();
   if (raw === '') { $('km-input').value = ''; delete $('km-input').dataset.manual; delete $('km-input').dataset.live; closeKmEdit(); paintOdo(true); return; }
   const v = parseFloat(raw.replace(/[.\s]/g, '').replace(',', '.'));      // "42.310" = 42310 (Punkt als Tausendertrenner), Komma = Dezimalstelle
-  if (!isFinite(v) || v < 0 || v > 999999) { $('odo-info').textContent = 'Bitte einen gültigen Kilometerstand eingeben (0 bis 999999).'; return; }
+  if (!isFinite(v) || v < 0 || v > 999999) { $('odo-info').textContent = 'Ungültig – erlaubt: 0 bis 999999'; return; }
   const km = Math.round(v);
   $('km-input').value = km; $('km-input').dataset.manual = String(km); delete $('km-input').dataset.live;   // von Hand gesetzt: wird beim Verwerfen der Simulation nicht gelöscht
   closeKmEdit(); paintOdo(true);
@@ -714,15 +715,15 @@ const socNow = () => { const n0 = optNum($('soc0-input').value), n1 = optNum($('
 })();
 $('btn-odo').addEventListener('click', async () => {                      // km-Stand direkt vom Škoda-Server holen
   const info = $('odo-info');
-  if (!apiEnabled()) { info.textContent = 'Für dieses Konto sind keine Fahrzeugdaten eingerichtet.'; return; }
-  info.textContent = 'Lade …';
+  if (!apiEnabled()) { info.textContent = 'Keine Fahrzeugdaten eingerichtet'; return; }
+  info.textContent = 'Lade …'; info.title = '';
   try {
     const res = await fetch('/api/vehicle', { headers: await authHeaders() });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(d.error || 'HTTP ' + res.status);
     if (d.odometerKm == null) throw new Error('Das Auto meldet keinen km-Stand');
     $('km-input').value = Math.round(d.odometerKm); paintOdo(true);
-  } catch (e) { info.textContent = 'Nicht verfügbar: ' + e.message; }
+  } catch (e) { info.textContent = 'Nicht verfügbar: ' + e.message; info.title = e.message; }
 });
 
 function updateCaptureDefaults() {
@@ -992,12 +993,12 @@ $('btn-save').addEventListener('click', () => {
     msg = 'Gespeichert: ' + fmt(consumed) + ' kWh, ' + eur(cost);
   } else {
     if (s0 == null || s1 == null) { flash($('save-msg'), 'Bitte Akku-Start und Akku-Ende angeben – sie verbinden diese Ladung mit der Verbrauchsrechnung.', false); return; }
-    const kwh = optNum($('kwh-input').value), price = optNum($('price-input').value), fee = place === 'bosch' ? optNum($('fee-input').value) : null;
+    const kwh = optNum($('kwh-input').value), price = optNum($('price-input').value), fee = optNum($('fee-input').value);
     if ([kwh, price, fee].some(Number.isNaN) || [kwh, price, fee].some(v => v != null && v < 0)) { flash($('save-msg'), 'Bitte kWh, Preis und Gebühren prüfen (nicht negativ).', false); return; }
     const prevH = lastHome(readings), cost = (kwh != null && price != null ? kwh * price : 0) + (fee ?? 0);      // Gebühren kommen additiv auf die Kosten
     entry = { id: Date.now(), date: new Date().toISOString(), place, totalReading: prevH ? prevH.totalReading : 0, consumedSinceLast: kwh ?? 0, cost };
     if (price != null) entry.pricePerKwh = price;
-    if (fee != null) entry.fee = fee;                                    // Servicegebühr (nur Bosch), bereits in cost enthalten
+    if (fee != null) entry.fee = fee;                                    // Servicegebühr (Bosch/Unterwegs), bereits in cost enthalten
     if (place === 'away' && $('prov-input').value) entry.provider = $('prov-input').value;      // optional: Ladeanbieter (Auswertungen fassen weiter als "Unterwegs" zusammen)
     msg = 'Gespeichert (' + (entry.provider || PLACES[place]) + '): ' + (kwh != null ? fmt(kwh) + ' kWh' : s0 + ' → ' + s1 + ' %') + (cost > 0 ? ', ' + eur(cost) : '');
   }
@@ -1035,7 +1036,8 @@ function setCapPlace(p) {
   $('cap-meter-card').classList.toggle('hidden', !home);
   $('cap-away-card').classList.toggle('hidden', home);
   const away = capPlace === 'away';                      // Anbieter-Auswahl nur bei "Unterwegs"
-  $('prov-wrap').classList.toggle('hidden', !away); $('fee-wrap').classList.toggle('hidden', capPlace !== 'bosch');   // Anbieter nur bei Unterwegs, Gebühren nur bei Bosch
+  $('prov-wrap').classList.toggle('hidden', !away); $('fee-wrap').classList.toggle('hidden', home);   // Anbieter nur bei Unterwegs, Gebühren bei Bosch und Unterwegs
+  $('cap-away-grid').style.gridTemplateColumns = away ? '0.85fr 0.95fr 0.85fr 1.35fr' : 'repeat(3,minmax(0,1fr))';   // Unterwegs: vier Spalten, Anbieter am breitesten
   if (away) {
     const sel = $('prov-input'), keep = sel.value;
     sel.innerHTML = providerOptions('');                 // aktuelle Liste aus den Einstellungen
@@ -1571,13 +1573,11 @@ function renderHistory() {
           </div>
         </div>
         <div class="g-away${ga}">
-          <div class="grid grid-cols-3 gap-2 mt-3 text-center">
-            <div><p class="${lbl} mb-1">Geladen kWh</p><input data-f="kwh" type="text" inputmode="decimal" value="${!home && r.consumedSinceLast > 0 ? String(r.consumedSinceLast).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
-            <div><p class="${lbl} mb-1">Preis €/kWh</p><input data-f="price" type="text" inputmode="decimal" value="${!home && r.pricePerKwh != null ? String(r.pricePerKwh).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
-            <div class="min-w-0">
-              <div class="g-prov${place === 'away' ? '' : ' hidden'}"><p class="${lbl} mb-1">Anbieter</p><select data-f="prov" class="${INPUT_CLS} h-[42px] px-1 py-0 text-sm">${providerOptions(r.provider || '')}</select></div>
-              <div class="g-fee${place === 'bosch' ? '' : ' hidden'}"><p class="${lbl} mb-1">Gebühren €</p><input data-f="fee" type="text" inputmode="decimal" value="${r.fee != null ? String(r.fee).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
-            </div>
+          <div class="g-grid grid gap-1.5 mt-3 text-center" style="grid-template-columns:${place === 'away' ? '0.85fr 0.95fr 0.85fr 1.35fr' : 'repeat(3,minmax(0,1fr))'}">
+            <div class="min-w-0"><p class="${lbl} mb-1">kWh</p><input data-f="kwh" type="text" inputmode="decimal" value="${!home && r.consumedSinceLast > 0 ? String(r.consumedSinceLast).replace('.', ',') : ''}" class="${INPUT_CLS} text-sm"></div>
+            <div class="min-w-0"><p class="${lbl} mb-1">€/kWh</p><input data-f="price" type="text" inputmode="decimal" value="${!home && r.pricePerKwh != null ? String(r.pricePerKwh).replace('.', ',') : ''}" class="${INPUT_CLS} text-sm"></div>
+            <div class="min-w-0"><p class="${lbl} mb-1">Gebühr €</p><input data-f="fee" type="text" inputmode="decimal" value="${r.fee != null ? String(r.fee).replace('.', ',') : ''}" class="${INPUT_CLS} text-sm"></div>
+            <div class="g-prov min-w-0${place === 'away' ? '' : ' hidden'}"><p class="${lbl} mb-1">Anbieter</p><select data-f="prov" class="${INPUT_CLS} h-[42px] px-1 py-0 text-sm">${providerOptions(r.provider || '')}</select></div>
           </div>
           <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
             <span class="text-sm text-slate-500 dark:text-slate-400">Kosten</span>
@@ -1645,7 +1645,7 @@ function togglePlaceGroups(li, place) {
   li.querySelectorAll('.g-home').forEach(el => el.classList.toggle('hidden', place !== 'home'));
   li.querySelectorAll('.g-away').forEach(el => el.classList.toggle('hidden', place === 'home'));
   li.querySelectorAll('.g-prov').forEach(el => el.classList.toggle('hidden', place !== 'away'));
-  li.querySelectorAll('.g-fee').forEach(el => el.classList.toggle('hidden', place !== 'bosch'));
+  li.querySelectorAll('.g-grid').forEach(el => { el.style.gridTemplateColumns = place === 'away' ? '0.85fr 0.95fr 0.85fr 1.35fr' : 'repeat(3,minmax(0,1fr))'; });
 }
 /** "Alt" eines Zuhause-Eintrags und "Neu" des vorherigen Zuhause-Eintrags sind derselbe Wert (Bosch/Unterwegs dazwischen zählen nicht). */
 function syncOlds() {
@@ -1671,7 +1671,7 @@ function updateDiffs() {
       if (isFinite(neu)) prevNew = neu;
     } else {
       const kwh = optNum(cell(i, 'kwh').value), price = optNum(cell(i, 'price').value);
-      const fee = domPlace(i) === 'bosch' ? optNum(cell(i, 'fee').value) : null, e = n => n != null && isFinite(n);
+      const fee = optNum(cell(i, 'fee').value), e = n => n != null && isFinite(n);
       cell(i, 'acost').textContent = (e(kwh) && e(price)) || e(fee) ? eur((e(kwh) && e(price) ? kwh * price : 0) + (e(fee) ? fee : 0)) : '–';
     }
   }
@@ -1739,10 +1739,10 @@ $('btn-edit-save').addEventListener('click', () => {
       if (x.reset) out.meterReset = true; else delete out.meterReset;
       prevHomeNew = x.neu;
     } else {
-      out = { ...x.r, ...common, place: x.place, totalReading: prevHomeNew ?? 0, consumedSinceLast: x.kwh ?? 0, cost: (x.kwh != null && x.price != null ? x.kwh * x.price : 0) + (x.place === 'bosch' ? x.fee ?? 0 : 0) };
+      out = { ...x.r, ...common, place: x.place, totalReading: prevHomeNew ?? 0, consumedSinceLast: x.kwh ?? 0, cost: (x.kwh != null && x.price != null ? x.kwh * x.price : 0) + (x.fee ?? 0) };
       if (x.price != null) out.pricePerKwh = x.price; else delete out.pricePerKwh;
       if (x.place === 'away' && x.prov) out.provider = x.prov; else delete out.provider;
-      if (x.place === 'bosch' && x.fee != null) out.fee = x.fee; else delete out.fee;
+      if (x.fee != null) out.fee = x.fee; else delete out.fee;
       delete out.meterReset; delete out.chargeStart; delete out.chargeEnd; delete out.avgPowerKw;     // Zähler-/Live-Daten gibt es nur zuhause
     }
     if (x.km != null) out.odometerKm = x.km; else delete out.odometerKm;       // geleerte Felder wirklich entfernen
@@ -1775,7 +1775,7 @@ if (document.fonts) document.fonts.ready.then(fitSeg);
    Export / Import der Zählerstände
    Dateiformat (JSON):
    { "app": "enyaq-ladekosten", "version": 1, "exportedAt": "<ISO-Datum>", "chargePowerKw": 7,
-     "readings": [ { id, date, totalReading, consumedSinceLast, cost, chargeDuration ("hh:mm"), place ("bosch" | "away"; fehlt = Zuhause), pricePerKwh, provider (Ladeanbieter, nur bei "away"), fee (Servicegebühr in €, nur bei "bosch"; in cost enthalten) }, … ] }
+     "readings": [ { id, date, totalReading, consumedSinceLast, cost, chargeDuration ("hh:mm"), place ("bosch" | "away"; fehlt = Zuhause), pricePerKwh, provider (Ladeanbieter, nur bei "away"), fee (Servicegebühr in €, nur bei "bosch"/"away"; in cost enthalten) }, … ] }
    Die Felder "app" und "version" dienen dem Wiedererkennen beim Import. Einstellungen werden nicht exportiert.
    "chargeDuration" ist ein abgeleiteter Wert (kWh / Ladeleistung): Er wird exportiert und beim Import geprüft,
    aber nicht gespeichert, sondern bei der Anzeige immer neu berechnet.
@@ -1817,9 +1817,9 @@ function parseImport(text) {
       if (!PLACES[r.place]) throw new Error('Ladeort in Eintrag ' + (i + 1) + ' ist ungültig.');
       if (r.place !== 'home') out.place = r.place;
     }
-    if (r.fee !== undefined && r.fee !== null) {                                                   // Servicegebühr nur bei Bosch
+    if (r.fee !== undefined && r.fee !== null) {                                                   // Servicegebühr nur bei Bosch/Unterwegs
       if (typeof r.fee !== 'number' || !isFinite(r.fee) || r.fee < 0 || r.fee > 1000) throw new Error('Gebühr in Eintrag ' + (i + 1) + ' ist ungültig.');
-      if (out.place === 'bosch') out.fee = r.fee;
+      if (out.place) out.fee = r.fee;                                                            // nur bei Bosch/Unterwegs
     }
     if (typeof r.provider === 'string' && r.provider.trim() && out.place === 'away') out.provider = r.provider.trim().slice(0, 30);   // Ladeanbieter nur bei "Unterwegs"
     for (const k of ['odometerKm', 'socStart', 'socEnd', 'capacityKwh', 'avgPowerKw', 'pricePerKwh']) {            // optionale Felder prüfen und übernehmen
