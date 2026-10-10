@@ -122,7 +122,7 @@
         </div>
       </div>
       <div id="live-img-wrap" class="hidden mt-3 rounded-2xl overflow-hidden bg-black">
-        <img src="/Enyaq.jpg" alt="Ladeanimation des Enyaq" class="w-full aspect-[2/1] object-cover" onerror="this.parentElement.remove()">
+        <img src="/Enyaq.jpg" alt="Ladeanimation des Enyaq" class="w-full aspect-[1080/616] object-contain" onerror="this.parentElement.remove()">
       </div>
     </div>
 
@@ -195,7 +195,6 @@
     </div>
 
     <div id="cap-away-card" class="hidden rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Geladen (optional)</p>
       <div class="grid grid-cols-2 gap-2">
         <div><label for="kwh-input" class="text-xs text-slate-500 dark:text-slate-400">kWh laut Säule</label><input id="kwh-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 10,4" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
         <div><label for="price-input" class="text-xs text-slate-500 dark:text-slate-400">Preis €/kWh</label><input id="price-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 0,45" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
@@ -229,9 +228,9 @@
           <div id="bt-lab1" class="absolute bottom-0 w-14 -translate-x-1/2 text-center text-xs leading-tight"><span class="block text-slate-500 dark:text-slate-400">Ende</span><span id="bt-v1" class="font-semibold"></span></div>
         </div>
         <div id="bt-track" class="relative touch-none select-none">
-          <div id="bt-bar" class="relative h-[52px] rounded-xl border-2 border-slate-400 dark:border-slate-500 overflow-hidden bg-slate-100 dark:bg-slate-800">
+          <div id="bt-bar" class="relative h-[52px] rounded-xl border-2 border-slate-400 dark:border-slate-500 overflow-hidden bg-white dark:bg-slate-800">
             <div id="bt-a" class="absolute top-0 bottom-0 left-0" style="background:#1D9E75"></div>
-            <div id="bt-b" class="absolute top-0 bottom-0" style="background:#9FE1CB"></div>
+            <div id="bt-b" class="absolute top-0 bottom-0" style="background:#CBD5E1"></div>
             <div class="absolute top-0 bottom-0 left-1/4 w-px bg-white/40"></div><div class="absolute top-0 bottom-0 left-1/2 w-px bg-white/40"></div><div class="absolute top-0 bottom-0 left-3/4 w-px bg-white/40"></div>
           </div>
           <div class="absolute -right-2 top-4 w-1.5 h-5 rounded-r bg-slate-400 dark:bg-slate-500"></div>
