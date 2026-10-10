@@ -195,9 +195,10 @@
     </div>
 
     <div id="cap-away-card" class="hidden rounded-3xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
-      <div id="cap-away-grid" class="grid grid-cols-2 gap-2">
+      <div id="cap-away-grid" class="grid grid-cols-3 gap-2">
         <div><label for="kwh-input" class="text-xs text-slate-500 dark:text-slate-400">kWh laut Säule</label><input id="kwh-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 10,4" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
         <div><label for="price-input" class="text-xs text-slate-500 dark:text-slate-400">Preis €/kWh</label><input id="price-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 0,45" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
+        <div id="fee-wrap" class="hidden min-w-0"><label for="fee-input" class="text-xs text-slate-500 dark:text-slate-400">Gebühren €</label><input id="fee-input" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 1,00" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></div>
         <div id="prov-wrap" class="hidden min-w-0"><label for="prov-input" class="text-xs text-slate-500 dark:text-slate-400">Anbieter</label><select id="prov-input" class="w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-1 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-1"></select></div>
       </div>
     </div>
@@ -991,11 +992,12 @@ $('btn-save').addEventListener('click', () => {
     msg = 'Gespeichert: ' + fmt(consumed) + ' kWh, ' + eur(cost);
   } else {
     if (s0 == null || s1 == null) { flash($('save-msg'), 'Bitte Akku-Start und Akku-Ende angeben – sie verbinden diese Ladung mit der Verbrauchsrechnung.', false); return; }
-    const kwh = optNum($('kwh-input').value), price = optNum($('price-input').value);
-    if ([kwh, price].some(Number.isNaN) || (kwh != null && kwh < 0) || (price != null && price < 0)) { flash($('save-msg'), 'Bitte kWh und Preis prüfen (nicht negativ).', false); return; }
-    const prevH = lastHome(readings), cost = kwh != null && price != null ? kwh * price : 0;
+    const kwh = optNum($('kwh-input').value), price = optNum($('price-input').value), fee = place === 'bosch' ? optNum($('fee-input').value) : null;
+    if ([kwh, price, fee].some(Number.isNaN) || [kwh, price, fee].some(v => v != null && v < 0)) { flash($('save-msg'), 'Bitte kWh, Preis und Gebühren prüfen (nicht negativ).', false); return; }
+    const prevH = lastHome(readings), cost = (kwh != null && price != null ? kwh * price : 0) + (fee ?? 0);      // Gebühren kommen additiv auf die Kosten
     entry = { id: Date.now(), date: new Date().toISOString(), place, totalReading: prevH ? prevH.totalReading : 0, consumedSinceLast: kwh ?? 0, cost };
     if (price != null) entry.pricePerKwh = price;
+    if (fee != null) entry.fee = fee;                                    // Servicegebühr (nur Bosch), bereits in cost enthalten
     if (place === 'away' && $('prov-input').value) entry.provider = $('prov-input').value;      // optional: Ladeanbieter (Auswertungen fassen weiter als "Unterwegs" zusammen)
     msg = 'Gespeichert (' + (entry.provider || PLACES[place]) + '): ' + (kwh != null ? fmt(kwh) + ' kWh' : s0 + ' → ' + s1 + ' %') + (cost > 0 ? ', ' + eur(cost) : '');
   }
@@ -1021,7 +1023,7 @@ $('btn-save').addEventListener('click', () => {
     else if (s.startsWith('error:')) flash($('save-msg'), msg + ' · Cloud-Fehler: ' + s.slice(6), false);
   });
   $('save-msg').classList.remove('hidden');
-  ['reading-input', 'km-input', 'soc0-input', 'soc1-input', 'kwh-input', 'price-input', 'prov-input'].forEach(id => { $(id).value = ''; delete $(id).dataset.live; delete $(id).dataset.manual; delete $(id).dataset.auto; });
+  ['reading-input', 'km-input', 'soc0-input', 'soc1-input', 'kwh-input', 'price-input', 'prov-input', 'fee-input'].forEach(id => { $(id).value = ''; delete $(id).dataset.live; delete $(id).dataset.manual; delete $(id).dataset.auto; });
   closeKmEdit(); setCapPlace('home');                    // nächste Erfassung startet wieder bei Zuhause
 });
 
@@ -1033,7 +1035,7 @@ function setCapPlace(p) {
   $('cap-meter-card').classList.toggle('hidden', !home);
   $('cap-away-card').classList.toggle('hidden', home);
   const away = capPlace === 'away';                      // Anbieter-Auswahl nur bei "Unterwegs"
-  $('prov-wrap').classList.toggle('hidden', !away); $('cap-away-grid').classList.toggle('grid-cols-3', away); $('cap-away-grid').classList.toggle('grid-cols-2', !away);
+  $('prov-wrap').classList.toggle('hidden', !away); $('fee-wrap').classList.toggle('hidden', capPlace !== 'bosch');   // Anbieter nur bei Unterwegs, Gebühren nur bei Bosch
   if (away) {
     const sel = $('prov-input'), keep = sel.value;
     sel.innerHTML = providerOptions('');                 // aktuelle Liste aus den Einstellungen
@@ -1572,7 +1574,10 @@ function renderHistory() {
           <div class="grid grid-cols-3 gap-2 mt-3 text-center">
             <div><p class="${lbl} mb-1">Geladen kWh</p><input data-f="kwh" type="text" inputmode="decimal" value="${!home && r.consumedSinceLast > 0 ? String(r.consumedSinceLast).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
             <div><p class="${lbl} mb-1">Preis €/kWh</p><input data-f="price" type="text" inputmode="decimal" value="${!home && r.pricePerKwh != null ? String(r.pricePerKwh).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
-            <div class="g-prov min-w-0${place === 'away' ? '' : ' invisible'}"><p class="${lbl} mb-1">Anbieter</p><select data-f="prov" class="${INPUT_CLS} px-1 text-sm">${providerOptions(r.provider || '')}</select></div>
+            <div class="min-w-0">
+              <div class="g-prov${place === 'away' ? '' : ' hidden'}"><p class="${lbl} mb-1">Anbieter</p><select data-f="prov" class="${INPUT_CLS} px-1 text-sm">${providerOptions(r.provider || '')}</select></div>
+              <div class="g-fee${place === 'bosch' ? '' : ' hidden'}"><p class="${lbl} mb-1">Gebühren €</p><input data-f="fee" type="text" inputmode="decimal" value="${r.fee != null ? String(r.fee).replace('.', ',') : ''}" placeholder="optional" class="${INPUT_CLS}"></div>
+            </div>
           </div>
           <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
             <span class="text-sm text-slate-500 dark:text-slate-400">Kosten</span>
@@ -1599,7 +1604,7 @@ function renderHistory() {
         <span class="text-sm text-slate-500 dark:text-slate-400">${date}</span>
       </div>`;
     if (!home) {                                       // Bosch / Unterwegs: gleiche Reihenfolge wie Zuhause (Kacheln -> Kosten -> km/Ladestand/Verbrauch), nur ohne Zähler
-      const hasKwh = r.consumedSinceLast > 0, hasPrice = r.pricePerKwh != null;
+      const hasKwh = r.consumedSinceLast > 0, hasPrice = r.pricePerKwh != null, hasFee = r.fee != null, hasCost = (hasKwh && hasPrice) || hasFee;
       return `<li data-idx="${i}" class="rounded-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm p-4">
       ${head}
       <div class="grid grid-cols-3 gap-2 mt-3 text-center">
@@ -1609,8 +1614,8 @@ function renderHistory() {
           <p class="font-semibold text-emerald-700 dark:text-emerald-300">${hasKwh ? fmt(r.consumedSinceLast) + ' kWh' : '–'}</p></div>
       </div>
       <div class="flex justify-between items-baseline mt-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-        <span class="text-sm text-slate-500 dark:text-slate-400">Kosten${hasPrice ? ` <span class="text-xs">(${fmt(r.pricePerKwh, 3)} €/kWh)</span>` : ''}</span>
-        <span class="text-lg font-semibold">${hasKwh && hasPrice ? eur(r.cost) : '–'}</span>
+        <span class="text-sm text-slate-500 dark:text-slate-400">Kosten${hasPrice || hasFee ? ` <span class="text-xs">(${[hasPrice ? fmt(r.pricePerKwh, 3) + ' €/kWh' : '', hasFee ? '+ ' + eur(r.fee) + ' Gebühr' : ''].filter(Boolean).join(' ')})</span>` : ''}</span>
+        <span class="text-lg font-semibold">${hasCost ? eur(r.cost) : '–'}</span>
       </div>
       ${extra}
     </li>`;
@@ -1639,7 +1644,8 @@ const domPlace = (i) => cell(i, 'place')?.value || 'home';
 function togglePlaceGroups(li, place) {
   li.querySelectorAll('.g-home').forEach(el => el.classList.toggle('hidden', place !== 'home'));
   li.querySelectorAll('.g-away').forEach(el => el.classList.toggle('hidden', place === 'home'));
-  li.querySelectorAll('.g-prov').forEach(el => el.classList.toggle('invisible', place !== 'away'));
+  li.querySelectorAll('.g-prov').forEach(el => el.classList.toggle('hidden', place !== 'away'));
+  li.querySelectorAll('.g-fee').forEach(el => el.classList.toggle('hidden', place !== 'bosch'));
 }
 /** "Alt" eines Zuhause-Eintrags und "Neu" des vorherigen Zuhause-Eintrags sind derselbe Wert (Bosch/Unterwegs dazwischen zählen nicht). */
 function syncOlds() {
@@ -1665,7 +1671,8 @@ function updateDiffs() {
       if (isFinite(neu)) prevNew = neu;
     } else {
       const kwh = optNum(cell(i, 'kwh').value), price = optNum(cell(i, 'price').value);
-      cell(i, 'acost').textContent = kwh != null && price != null && isFinite(kwh) && isFinite(price) ? eur(kwh * price) : '–';
+      const fee = domPlace(i) === 'bosch' ? optNum(cell(i, 'fee').value) : null, e = n => n != null && isFinite(n);
+      cell(i, 'acost').textContent = (e(kwh) && e(price)) || e(fee) ? eur((e(kwh) && e(price) ? kwh * price : 0) + (e(fee) ? fee : 0)) : '–';
     }
   }
 }
@@ -1701,11 +1708,11 @@ $('btn-edit-save').addEventListener('click', () => {
   const all = stored.map((r, i) => ({
     r, date: new Date(cell(i, 'date').value), place: domPlace(i), neu: Math.round(parseNum(cell(i, 'new').value) * 10) / 10,
     cap: parseNum(cell(i, 'cap').value), reset: cell(i, 'reset')?.checked === true, km: optNum(cell(i, 'km').value), s0: optNum(cell(i, 's0').value), s1: optNum(cell(i, 's1').value),
-    kwh: optNum(cell(i, 'kwh').value), price: optNum(cell(i, 'price').value), prov: cell(i, 'prov')?.value || '', del: cell(i, 'delbtn').dataset.del === '1'
+    kwh: optNum(cell(i, 'kwh').value), price: optNum(cell(i, 'price').value), prov: cell(i, 'prov')?.value || '', fee: optNum(cell(i, 'fee')?.value ?? ''), del: cell(i, 'delbtn').dataset.del === '1'
   }));
   const live = all.filter(x => !x.del);
   if (live.some(x => isNaN(x.date) || (x.place === 'home' && (!isFinite(x.neu) || x.neu < 0)))) { alert('Bitte gültige Datums- und Zählerstandswerte eingeben.'); return; }
-  if (live.some(x => x.place !== 'home' && ([x.kwh, x.price].some(Number.isNaN) || (x.kwh != null && x.kwh < 0) || (x.price != null && x.price < 0)))) { alert('Bitte kWh und Preis prüfen (Zahl, nicht negativ).'); return; }
+  if (live.some(x => x.place !== 'home' && ([x.kwh, x.price, x.fee].some(Number.isNaN) || [x.kwh, x.price, x.fee].some(v => v != null && v < 0)))) { alert('Bitte kWh, Preis und Gebühren prüfen (Zahl, nicht negativ).'); return; }
   if (all.some(x => [x.km, x.s0, x.s1].some(Number.isNaN) || (x.km != null && x.km < 0) || [x.s0, x.s1].some(v => v != null && (v < 0 || v > 100)) || (x.s0 != null && x.s1 != null && x.s1 <= x.s0))) {
     alert('Bitte km-Stand und Akku-Prozente prüfen (0–100 %, Ende größer als Start).'); return;
   }
@@ -1728,13 +1735,14 @@ $('btn-edit-save').addEventListener('click', () => {
       const unitPrice = wasHome && x.r.consumedSinceLast > 0 ? x.r.cost / x.r.consumedSinceLast : currentPrice;
       const consumed = x.reset ? x.neu : (prevHomeNew != null ? Math.max(0, Math.round((x.neu - prevHomeNew) * 10) / 10) : 0);
       out = { ...x.r, ...common, totalReading: x.neu, consumedSinceLast: consumed, cost: consumed * unitPrice };
-      delete out.place; delete out.pricePerKwh; delete out.provider;
+      delete out.place; delete out.pricePerKwh; delete out.provider; delete out.fee;
       if (x.reset) out.meterReset = true; else delete out.meterReset;
       prevHomeNew = x.neu;
     } else {
-      out = { ...x.r, ...common, place: x.place, totalReading: prevHomeNew ?? 0, consumedSinceLast: x.kwh ?? 0, cost: x.kwh != null && x.price != null ? x.kwh * x.price : 0 };
+      out = { ...x.r, ...common, place: x.place, totalReading: prevHomeNew ?? 0, consumedSinceLast: x.kwh ?? 0, cost: (x.kwh != null && x.price != null ? x.kwh * x.price : 0) + (x.place === 'bosch' ? x.fee ?? 0 : 0) };
       if (x.price != null) out.pricePerKwh = x.price; else delete out.pricePerKwh;
       if (x.place === 'away' && x.prov) out.provider = x.prov; else delete out.provider;
+      if (x.place === 'bosch' && x.fee != null) out.fee = x.fee; else delete out.fee;
       delete out.meterReset; delete out.chargeStart; delete out.chargeEnd; delete out.avgPowerKw;     // Zähler-/Live-Daten gibt es nur zuhause
     }
     if (x.km != null) out.odometerKm = x.km; else delete out.odometerKm;       // geleerte Felder wirklich entfernen
@@ -1767,7 +1775,7 @@ if (document.fonts) document.fonts.ready.then(fitSeg);
    Export / Import der Zählerstände
    Dateiformat (JSON):
    { "app": "enyaq-ladekosten", "version": 1, "exportedAt": "<ISO-Datum>", "chargePowerKw": 7,
-     "readings": [ { id, date, totalReading, consumedSinceLast, cost, chargeDuration ("hh:mm"), place ("bosch" | "away"; fehlt = Zuhause), pricePerKwh, provider (Ladeanbieter, nur bei "away") }, … ] }
+     "readings": [ { id, date, totalReading, consumedSinceLast, cost, chargeDuration ("hh:mm"), place ("bosch" | "away"; fehlt = Zuhause), pricePerKwh, provider (Ladeanbieter, nur bei "away"), fee (Servicegebühr in €, nur bei "bosch"; in cost enthalten) }, … ] }
    Die Felder "app" und "version" dienen dem Wiedererkennen beim Import. Einstellungen werden nicht exportiert.
    "chargeDuration" ist ein abgeleiteter Wert (kWh / Ladeleistung): Er wird exportiert und beim Import geprüft,
    aber nicht gespeichert, sondern bei der Anzeige immer neu berechnet.
@@ -1808,6 +1816,10 @@ function parseImport(text) {
     if (r.place !== undefined && r.place !== null) {                                                // Ladeort: fehlt = Zuhause
       if (!PLACES[r.place]) throw new Error('Ladeort in Eintrag ' + (i + 1) + ' ist ungültig.');
       if (r.place !== 'home') out.place = r.place;
+    }
+    if (r.fee !== undefined && r.fee !== null) {                                                   // Servicegebühr nur bei Bosch
+      if (typeof r.fee !== 'number' || !isFinite(r.fee) || r.fee < 0 || r.fee > 1000) throw new Error('Gebühr in Eintrag ' + (i + 1) + ' ist ungültig.');
+      if (out.place === 'bosch') out.fee = r.fee;
     }
     if (typeof r.provider === 'string' && r.provider.trim() && out.place === 'away') out.provider = r.provider.trim().slice(0, 30);   // Ladeanbieter nur bei "Unterwegs"
     for (const k of ['odometerKm', 'socStart', 'socEnd', 'capacityKwh', 'avgPowerKw', 'pricePerKwh']) {            // optionale Felder prüfen und übernehmen
@@ -2058,7 +2070,7 @@ function renderReport() {
   /* Ladeliste (nur im PDF/Druck sichtbar) */
   const th = 'text-left font-medium py-1 border-b border-slate-300', td = 'py-1 border-b border-slate-200';
   $('rep-list').innerHTML = `<p class="text-sm mb-2">Alle Ladungen im ${MONTHS_LONG[m]} ${y}</p><table class="w-full text-xs"><thead><tr><th class="${th}">Datum</th>${repPlace === 'all' ? `<th class="${th}">Ort</th>` : ''}<th class="${th} text-right">kWh</th><th class="${th} text-right">Kosten</th><th class="${th} text-right">Dauer</th><th class="${th} text-right">km</th></tr></thead><tbody>`
-    + r.charges.map(c => `<tr><td class="${td}">${c.d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}, ${c.d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</td>${repPlace === 'all' ? `<td class="${td}">${PLACES[placeOf(c.r)]}</td>` : ''}<td class="${td} text-right">${c.r.consumedSinceLast > 0 ? fmt(c.r.consumedSinceLast, 1) : '–'}</td><td class="${td} text-right">${isHome(c.r) || (c.r.consumedSinceLast > 0 && c.r.pricePerKwh != null) ? eur(c.r.cost) : '–'}</td><td class="${td} text-right">${isHome(c.r) ? chargeDurationOf(c.r) : '–'}</td><td class="${td} text-right">${c.st.km ? fmt(c.st.km, 0) : '–'}</td></tr>`).join('')
+    + r.charges.map(c => `<tr><td class="${td}">${c.d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}, ${c.d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</td>${repPlace === 'all' ? `<td class="${td}">${PLACES[placeOf(c.r)]}</td>` : ''}<td class="${td} text-right">${c.r.consumedSinceLast > 0 ? fmt(c.r.consumedSinceLast, 1) : '–'}</td><td class="${td} text-right">${isHome(c.r) || c.r.cost > 0 || (c.r.consumedSinceLast > 0 && c.r.pricePerKwh != null) ? eur(c.r.cost) : '–'}</td><td class="${td} text-right">${isHome(c.r) ? chargeDurationOf(c.r) : '–'}</td><td class="${td} text-right">${c.st.km ? fmt(c.st.km, 0) : '–'}</td></tr>`).join('')
     + `<tr class="font-semibold"><td class="py-1">Summe</td>${repPlace === 'all' ? '<td></td>' : ''}<td class="py-1 text-right">${fmt(r.kwh, 1)}</td><td class="py-1 text-right">${eur(r.cost)}</td><td></td><td class="py-1 text-right">${r.km ? fmt(r.km, 0) : '–'}</td></tr></tbody></table>`;
 }
 document.querySelectorAll('.rep-place-btn').forEach(b => b.addEventListener('click', () => { repPlace = b.dataset.place; renderReport(); }));
@@ -2128,7 +2140,7 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabMana
 let user = null, unsub = null, unsubP = null;
 const col = () => collection(db, 'enyaqStrom', user.uid, 'readings');
 const provDoc = () => doc(db, 'enyaqStrom', user.uid, 'settings', 'providers');     // eigenes Dokument für die Anbieter-Liste
-const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost, r.odometerKm, r.socStart, r.socEnd, r.capacityKwh, r.chargeStart, r.chargeEnd, r.avgPowerKw, r.meterReset, r.place, r.pricePerKwh, r.provider].join('|');
+const sig = (r) => [r.id, r.date, r.totalReading, r.consumedSinceLast, r.cost, r.odometerKm, r.socStart, r.socEnd, r.capacityKwh, r.chargeStart, r.chargeEnd, r.avgPowerKw, r.meterReset, r.place, r.pricePerKwh, r.provider, r.fee].join('|');
 
 window.cloud = {
   isSignedIn: () => !!user,
